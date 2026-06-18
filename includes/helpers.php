@@ -920,6 +920,9 @@ function render_layout(string $title, string $content, array $options = []): voi
             background: var(--bg);
             color: var(--text);
             -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
         /* ── Skip link ───────────────────────────────────────── */
@@ -1098,6 +1101,7 @@ function render_layout(string $title, string $content, array $options = []): voi
             max-width: 1200px;
             margin: 0 auto;
             padding: 2.5rem 1.5rem 4rem;
+            flex: 1;
         }
 
         /* ── Focus ───────────────────────────────────────────── */
@@ -1949,7 +1953,7 @@ function render_layout(string $title, string $content, array $options = []): voi
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <script>lucide.createIcons();</script>
 
-    <footer style="background:var(--nav-bg);border-top:2px solid var(--accent);margin-top:auto;padding:.65rem 1.5rem;">
+    <footer style="background:var(--nav-bg);border-top:2px solid var(--accent);padding:.65rem 1.5rem;">
         <div style="max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;font-size:.75rem;">
             <span style="color:rgba(255,255,255,.45);font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-size:.68rem;margin-right:.25rem;">ERC Digital Tools</span>
             <a href="<?= h(SOR_SITE_URL) ?>/" style="color:rgba(255,255,255,.75);text-decoration:none;padding:.15rem .45rem;border:1px solid rgba(255,255,255,.25);border-radius:3px;">SOR Management System</a>

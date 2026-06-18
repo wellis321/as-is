@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/mail.php';
 
 function is_logged_in(): bool
 {
@@ -71,28 +72,120 @@ function establish_session(array $user, array $entraRoles = []): void
     $_SESSION['entra_roles']     = $entraRoles;
 }
 
-function attempt_login(string $user, string $pass): bool
+/**
+ * Returns true on success, false on bad credentials, or 'needs_activation'
+ * when the account exists but has never had a password set.
+ *
+ * @return true|false|'needs_activation'
+ */
+function attempt_login(string $user, string $pass): bool|string
 {
+    $user  = trim($user);
+    $email = strtolower($user);
+
     $db   = db();
     $stmt = $db->prepare(
-        'SELECT id, username, password_hash, auth_provider, display_name, app_role
-         FROM users WHERE username = ? AND is_active = 1 LIMIT 1'
+        'SELECT id, username, password_hash, auth_provider, display_name, app_role, email
+         FROM users
+         WHERE is_active = 1
+           AND (username = ? OR LOWER(email) = ?)
+         LIMIT 1'
     );
-    $stmt->execute([$user]);
-    $row  = $stmt->fetch();
+    $stmt->execute([$user, $email]);
+    $row = $stmt->fetch();
+
+    // Account exists but no password set — trigger activation flow
+    if ($row && empty($row['password_hash']) && ($row['auth_provider'] ?? 'local') === 'local') {
+        $rowEmail = (string) ($row['email'] ?? '');
+        if ($rowEmail === '') {
+            $_SESSION['_last_login_fail'] = 'microsoft_only_no_local_password';
+            return false;
+        }
+        $code = create_password_setup_token((int) $row['id']);
+        send_activation_email($rowEmail, (string) ($row['display_name'] ?: $row['username']), $code, (int) $row['id']);
+        $_SESSION['activation_user_id'] = (int) $row['id'];
+        return 'needs_activation';
+    }
 
     $hash  = $row && !empty($row['password_hash'])
         ? $row['password_hash']
         : '$2y$12$invalidsaltinvalidsaltinvalidsaltinvalidsaltinvalidsa';
     $valid = password_verify($pass, $hash);
 
+    $reason = 'bad_password';
+    if (!$row) {
+        $reason = 'user_not_found';
+    } elseif (empty($row['password_hash'])) {
+        $reason = 'microsoft_only_no_local_password';
+    } elseif ($valid) {
+        $reason = 'ok';
+    }
+
+    $_SESSION['_last_login_fail'] = $reason;
+
     if ($row && $valid && !empty($row['password_hash'])) {
         establish_session($row);
-
+        unset($_SESSION['_last_login_fail']);
         return true;
     }
 
     return false;
+}
+
+function last_login_fail_reason(): string
+{
+    return (string) ($_SESSION['_last_login_fail'] ?? '');
+}
+
+function active_users_count(): int
+{
+    try {
+        return (int) db()->query('SELECT COUNT(*) FROM users WHERE is_active = 1')->fetchColumn();
+    } catch (Throwable) {
+        return -1;
+    }
+}
+
+// ── Password setup tokens ─────────────────────────────────────────────────────
+
+function create_password_setup_token(int $userId): string
+{
+    // Reuse an existing valid token so re-entering username doesn't invalidate the email
+    $stmt = db()->prepare(
+        'SELECT token FROM password_setup_tokens
+          WHERE user_id = ? AND expires_at > NOW() AND used_at IS NULL
+          LIMIT 1'
+    );
+    $stmt->execute([$userId]);
+    $existing = $stmt->fetchColumn();
+    if ($existing !== false) {
+        return (string) $existing;
+    }
+
+    db()->prepare('DELETE FROM password_setup_tokens WHERE user_id = ?')->execute([$userId]);
+    $code    = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $expires = date('Y-m-d H:i:s', time() + 1800);
+    db()->prepare(
+        'INSERT INTO password_setup_tokens (user_id, token, expires_at) VALUES (?, ?, ?)'
+    )->execute([$userId, $code, $expires]);
+    return $code;
+}
+
+function consume_password_setup_token(int $userId, string $code): bool
+{
+    $stmt = db()->prepare(
+        'SELECT id FROM password_setup_tokens
+          WHERE user_id = ? AND token = ? AND expires_at > NOW() AND used_at IS NULL
+          LIMIT 1'
+    );
+    $stmt->execute([$userId, $code]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        return false;
+    }
+    db()->prepare('UPDATE password_setup_tokens SET used_at = NOW() WHERE id = ?')
+        ->execute([(int) $row['id']]);
+    return true;
 }
 
 /**
