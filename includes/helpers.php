@@ -1249,6 +1249,8 @@ function render_layout(string $title, string $content, array $options = []): voi
         }
 
         input[type="text"],
+        input[type="password"],
+        input[type="email"],
         input[type="number"],
         input[type="date"],
         textarea,

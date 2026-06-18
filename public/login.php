@@ -9,8 +9,6 @@ if (is_logged_in()) {
     redirect(resolve_login_next($_GET['next'] ?? ''));
 }
 
-$userCount = active_users_count();
-
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_verify()) {
@@ -37,9 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $error = 'Incorrect username or password.';
             }
-            if ($userCount === 0) {
-                $error = 'No user accounts exist yet. Run sql/migrate_auth.sql then sql/migrate_password_setup_tokens.sql and add a user in phpMyAdmin.';
-            }
         }
     }
 }
@@ -49,13 +44,6 @@ ob_start();
 <div class="login-card">
     <h1>Sign in</h1>
     <p class="login-sub">AS-IS process mapping</p>
-
-    <?php if ($userCount === 0): ?>
-        <div class="flash flash-info">
-            <strong>Setup required:</strong> no user accounts exist yet.
-            Run <code>sql/migrate_auth.sql</code> and <code>sql/migrate_password_setup_tokens.sql</code> in phpMyAdmin, then add a user.
-        </div>
-    <?php endif; ?>
 
     <?= render_flash() ?>
 

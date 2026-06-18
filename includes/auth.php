@@ -41,7 +41,7 @@ function client_ip(): string
 
 function is_rate_limited(string $ip): bool
 {
-    $stmt = db()->prepare(
+    $stmt = auth_db()->prepare(
         'SELECT COUNT(*) FROM login_attempts
           WHERE ip = ? AND attempted_at > DATE_SUB(NOW(), INTERVAL 15 MINUTE)'
     );
@@ -52,12 +52,12 @@ function is_rate_limited(string $ip): bool
 
 function record_failed_attempt(string $ip): void
 {
-    db()->prepare('INSERT INTO login_attempts (ip) VALUES (?)')->execute([$ip]);
+    auth_db()->prepare('INSERT INTO login_attempts (ip) VALUES (?)')->execute([$ip]);
 }
 
 function clear_attempts(string $ip): void
 {
-    db()->prepare('DELETE FROM login_attempts WHERE ip = ?')->execute([$ip]);
+    auth_db()->prepare('DELETE FROM login_attempts WHERE ip = ?')->execute([$ip]);
 }
 
 /** @param array<string,mixed> $user */
@@ -83,7 +83,7 @@ function attempt_login(string $user, string $pass): bool|string
     $user  = trim($user);
     $email = strtolower($user);
 
-    $db   = db();
+    $db   = auth_db();
     $stmt = $db->prepare(
         'SELECT id, username, password_hash, auth_provider, display_name, app_role, email
          FROM users
@@ -140,7 +140,7 @@ function last_login_fail_reason(): string
 function active_users_count(): int
 {
     try {
-        return (int) db()->query('SELECT COUNT(*) FROM users WHERE is_active = 1')->fetchColumn();
+        return (int) auth_db()->query('SELECT COUNT(*) FROM users WHERE is_active = 1')->fetchColumn();
     } catch (Throwable) {
         return -1;
     }
@@ -151,7 +151,7 @@ function active_users_count(): int
 function create_password_setup_token(int $userId): string
 {
     // Reuse an existing valid token so re-entering username doesn't invalidate the email
-    $stmt = db()->prepare(
+    $stmt = auth_db()->prepare(
         'SELECT token FROM password_setup_tokens
           WHERE user_id = ? AND expires_at > NOW() AND used_at IS NULL
           LIMIT 1'
@@ -162,10 +162,10 @@ function create_password_setup_token(int $userId): string
         return (string) $existing;
     }
 
-    db()->prepare('DELETE FROM password_setup_tokens WHERE user_id = ?')->execute([$userId]);
+    auth_db()->prepare('DELETE FROM password_setup_tokens WHERE user_id = ?')->execute([$userId]);
     $code    = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     $expires = date('Y-m-d H:i:s', time() + 1800);
-    db()->prepare(
+    auth_db()->prepare(
         'INSERT INTO password_setup_tokens (user_id, token, expires_at) VALUES (?, ?, ?)'
     )->execute([$userId, $code, $expires]);
     return $code;
@@ -173,7 +173,7 @@ function create_password_setup_token(int $userId): string
 
 function consume_password_setup_token(int $userId, string $code): bool
 {
-    $stmt = db()->prepare(
+    $stmt = auth_db()->prepare(
         'SELECT id FROM password_setup_tokens
           WHERE user_id = ? AND token = ? AND expires_at > NOW() AND used_at IS NULL
           LIMIT 1'
@@ -183,7 +183,7 @@ function consume_password_setup_token(int $userId, string $code): bool
     if (!$row) {
         return false;
     }
-    db()->prepare('UPDATE password_setup_tokens SET used_at = NOW() WHERE id = ?')
+    auth_db()->prepare('UPDATE password_setup_tokens SET used_at = NOW() WHERE id = ?')
         ->execute([(int) $row['id']]);
     return true;
 }
@@ -224,7 +224,7 @@ function login_user_from_entra(array $claims): array
         return ['ok' => false, 'error' => 'Unrecognised application role in token.'];
     }
 
-    $db = db();
+    $db = auth_db();
 
     $stmt = $db->prepare('SELECT * FROM users WHERE entra_oid = ? AND is_active = 1 LIMIT 1');
     $stmt->execute([$oid]);
