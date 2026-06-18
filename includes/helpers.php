@@ -9,6 +9,18 @@ function h(?string $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
+function asset_url(string $path): string
+{
+    $base = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+    $base = rtrim($base, '/');
+
+    if ($base === '' || $base === '.') {
+        return '/' . ltrim($path, '/');
+    }
+
+    return $base . '/' . ltrim($path, '/');
+}
+
 function slugify(string $text): string
 {
     $slug = strtolower(trim($text));
@@ -683,6 +695,28 @@ function action_type_options(): array
     ];
 }
 
+function action_type_descriptions(): array
+{
+    return [
+        'general'      => 'A standard step with no specific action icon.',
+        'phone'        => 'Someone makes or receives a telephone call.',
+        'email'        => 'A formal email is sent or received.',
+        'letter'       => 'A letter or document is sent by post.',
+        'notification' => 'An alert, text message, or system notification is triggered.',
+        'document'     => 'A form, record, or document is created or used.',
+        'data-entry'   => 'A person enters information into a system.',
+        'automated'    => 'The system performs this step automatically.',
+        'api-call'     => 'One system calls another — an integration point.',
+        'report'       => 'A formal report or output record is produced.',
+        'check'        => 'Something is checked, verified, or reviewed.',
+        'meeting'      => 'A discussion, sign-off, or formal approval.',
+        'payment'      => 'A financial transaction — invoice, payment, or refund.',
+        'visit'        => 'Someone visits a location for work or inspection.',
+        'wait'         => 'The process pauses — waiting for a response or date.',
+        'escalation'   => 'The task is passed to a more senior person or team.',
+    ];
+}
+
 function action_type_icon(string $type): string
 {
     $icon = match ($type) {
@@ -1265,7 +1299,8 @@ function render_layout(string $title, string $content, array $options = []): voi
         .landing-hero-visual { margin: 0; }
 
         .landing-hero-visual img,
-        .landing-figure img {
+        .landing-figure img,
+        .landing-illustration svg {
             width: 100%;
             height: auto;
             display: block;
@@ -1412,9 +1447,60 @@ function render_layout(string $title, string $content, array $options = []): voi
             .landing-hero-inner,
             .landing-split,
             .landing-features,
-            .landing-expect { grid-template-columns: 1fr; }
+            .landing-expect,
+            .landing-action-grid { grid-template-columns: 1fr; }
 
             .landing-split-reverse .landing-figure { order: 0; }
+        }
+
+        .landing-action-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .landing-action-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 1rem 1.1rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+
+        .landing-action-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 8px;
+            background: oklch(96% 0.02 200);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .landing-action-icon svg.lucide {
+            width: 1.1rem;
+            height: 1.1rem;
+        }
+
+        .landing-action-card h3 {
+            margin: 0 0 0.25rem;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .landing-action-card p {
+            margin: 0;
+            font-size: 0.8125rem;
+            line-height: 1.45;
+        }
+
+        @media (max-width: 1100px) {
+            .landing-action-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
         /* ── Build workflow tracker ─────────────────────────── */

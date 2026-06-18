@@ -282,13 +282,11 @@ $laneColours = ['#ffffff', '#e8eaed'];
                                          background:<?= $laneColours[$i % 2] ?>;border:1px solid var(--border);
                                          vertical-align:middle;"></span>
                         </td>
-                        <td>
-                            <form class="inline-form" method="post" action="/lane-delete.php"
-                                  onsubmit="return confirm('Delete this swimlane? All its steps will also be deleted.');">
-                                <input type="hidden" name="slug"    value="<?= h($document['slug']) ?>">
-                                <input type="hidden" name="lane_id" value="<?= (int) $lane['id'] ?>">
-                                <button class="btn btn-link" type="submit">Delete</button>
-                            </form>
+                        <td style="vertical-align:middle;">
+                            <div class="row-actions">
+                                <a class="lnk-danger"
+                                   href="/lane-delete.php?slug=<?= rawurlencode($document['slug']) ?>&lane_id=<?= (int) $lane['id'] ?>">Delete</a>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -427,14 +425,13 @@ $laneColours = ['#ffffff', '#e8eaed'];
                         <td style="font-size:0.8rem;color:var(--muted);">
                             <?= h((string) ($step['systems'] ?? '—')) ?>
                         </td>
-                        <td class="actions">
-                            <a href="/step-edit.php?slug=<?= rawurlencode($document['slug']) ?>&step_id=<?= (int) $step['id'] ?>">Edit</a>
-                            <form class="inline-form" method="post" action="/step-delete.php"
-                                  onsubmit="return confirm('Delete this step? Connections to it will also be removed.');">
-                                <input type="hidden" name="slug"    value="<?= h($document['slug']) ?>">
-                                <input type="hidden" name="step_id" value="<?= (int) $step['id'] ?>">
-                                <button class="btn btn-link" type="submit">Delete</button>
-                            </form>
+                        <td style="vertical-align:middle;">
+                            <div class="row-actions">
+                                <a class="btn btn-secondary btn-sm"
+                                   href="/step-edit.php?slug=<?= rawurlencode($document['slug']) ?>&step_id=<?= (int) $step['id'] ?>">Edit</a>
+                                <a class="lnk-danger"
+                                   href="/step-delete.php?slug=<?= rawurlencode($document['slug']) ?>&step_id=<?= (int) $step['id'] ?>">Delete</a>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -492,12 +489,11 @@ $laneColours = ['#ffffff', '#e8eaed'];
                                 <strong><?= (int) $c['to_number'] ?>.</strong>
                                 <?= h($c['to_title']) ?>
                             </td>
-                            <td>
-                                <form class="inline-form" method="post" action="/connection-delete.php">
-                                    <input type="hidden" name="slug"          value="<?= h($document['slug']) ?>">
-                                    <input type="hidden" name="connection_id" value="<?= (int) $c['id'] ?>">
-                                    <button class="btn btn-link" type="submit">Remove</button>
-                                </form>
+                            <td style="vertical-align:middle;">
+                                <div class="row-actions">
+                                    <a class="lnk-danger"
+                                       href="/connection-delete.php?slug=<?= rawurlencode($document['slug']) ?>&connection_id=<?= (int) $c['id'] ?>">Remove</a>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

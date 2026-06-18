@@ -91,11 +91,7 @@ ob_start();
                         <div class="row-actions">
                             <a class="btn btn-secondary btn-sm"
                                href="/system-edit.php?id=<?= (int)$sys['id'] ?>">Edit</a>
-                            <form class="inline-form" method="post" action="/system-delete.php"
-                                  onsubmit="return confirm('Delete <?= h(addslashes($sys['name'])) ?>?<?= (int)$sys['step_count'] > 0 ? '\nUsed in ' . (int)$sys['step_count'] . ' step(s) — it will be removed from them.' : '' ?>');">
-                                <input type="hidden" name="system_id" value="<?= (int)$sys['id'] ?>">
-                                <button class="btn btn-link lnk-danger" type="submit">Delete</button>
-                            </form>
+                            <a class="lnk-danger" href="/system-delete.php?id=<?= (int)$sys['id'] ?>">Delete</a>
                         </div>
                     </td>
                 </tr>

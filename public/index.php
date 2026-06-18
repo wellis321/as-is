@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/helpers.php';
+require_once dirname(__DIR__) . '/includes/landing-illustrations.php';
 
 ob_start();
 ?>
@@ -21,8 +22,8 @@ ob_start();
                 <a class="btn btn-secondary btn-lg" href="/view.php?slug=sample-customer-first">See an example</a>
             </div>
         </div>
-        <figure class="landing-hero-visual">
-            <img src="/images/hero-swimlanes.svg" alt="Illustration of a swimlane process map with connected steps across three teams" width="640" height="420">
+        <figure class="landing-hero-visual landing-illustration" aria-hidden="false">
+            <?= landing_illustration_hero() ?>
         </figure>
     </div>
 </section>
@@ -42,8 +43,8 @@ ob_start();
                 the diagram becomes outdated, cluttered, and difficult for new people to understand.
             </p>
         </div>
-        <figure class="landing-figure">
-            <img src="/images/diagram-before.svg" alt="Abstract illustration of a cluttered, hard-to-follow process diagram" width="520" height="320" loading="lazy">
+        <figure class="landing-figure landing-illustration">
+            <?= landing_illustration_before() ?>
             <figcaption>Dense static diagrams are hard to read and painful to update.</figcaption>
         </figure>
     </div>
@@ -51,8 +52,8 @@ ob_start();
 
 <section class="landing-section landing-section-alt">
     <div class="landing-section-inner landing-split landing-split-reverse">
-        <figure class="landing-figure">
-            <img src="/images/diagram-after.svg" alt="Abstract illustration of a clean structured process map with swimlanes" width="520" height="320" loading="lazy">
+        <figure class="landing-figure landing-illustration">
+            <?= landing_illustration_after() ?>
             <figcaption>Structured data generates a clearer map — and stays editable.</figcaption>
         </figure>
         <div>
@@ -70,6 +71,41 @@ ob_start();
                 <li><strong>Live diagrams</strong> — auto-generated maps you can view and print</li>
             </ul>
         </div>
+    </div>
+</section>
+
+<section class="landing-section">
+    <div class="landing-section-inner">
+        <h2 class="landing-h2 landing-center">Action types for every step</h2>
+        <p class="landing-center landing-intro">
+            When you add a step to a process map, you can tag it with an action type.
+            Each one adds an icon to the diagram so people can see at a glance whether
+            someone is calling, entering data, waiting, escalating, and so on.
+        </p>
+        <div class="landing-action-grid">
+            <?php
+            $descriptions = action_type_descriptions();
+            foreach (action_type_options() as $type => $label):
+                if ($type === 'general') {
+                    continue;
+                }
+            ?>
+                <article class="landing-action-card">
+                    <div class="landing-action-icon" aria-hidden="true">
+                        <?= action_type_icon($type) ?>
+                    </div>
+                    <div>
+                        <h3><?= h($label) ?></h3>
+                        <p><?= h($descriptions[$type] ?? '') ?></p>
+                    </div>
+                </article>
+            <?php endforeach; ?>
+        </div>
+        <p class="landing-center" style="margin-top:1.5rem;margin-bottom:0;font-size:0.875rem;">
+            Plus <strong>General task</strong> for steps that do not need a specific icon.
+            Step types <strong>Start</strong>, <strong>Task</strong>, <strong>Decision</strong>, and <strong>End</strong>
+            shape how each step appears in the flow.
+        </p>
     </div>
 </section>
 
