@@ -1,0 +1,13 @@
+{
+    "name": "erc/as-is",
+    "description": "AS-IS process mapping application",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "league/oauth2-client": "^2.7",
+        "thenetworg/oauth2-azure": "^2.2"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

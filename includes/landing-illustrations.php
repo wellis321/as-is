@@ -2,93 +2,8 @@
 
 declare(strict_types=1);
 
-// #region agent log
-function landing_hero_debug_geometry(): void
-{
-    $logPath = dirname(__DIR__) . '/.cursor/debug-ac9752.log';
-    $shapes = [
-        'b1' => ['x' => 100, 'y' => 54, 'w' => 100, 'h' => 28, 'label' => '1. Contact', 'font' => 11],
-        'b2' => ['x' => 40, 'y' => 156, 'w' => 80, 'h' => 28, 'label' => '2. Take call', 'font' => 11],
-        'b3' => ['x' => 136, 'y' => 156, 'w' => 110, 'h' => 28, 'label' => '3. Log in Liberty', 'font' => 11],
-        'diamond' => ['x' => 262, 'y' => 156, 'w' => 48, 'h' => 28, 'label' => 'Route?', 'font' => 10],
-        'b5' => ['x' => 368, 'y' => 156, 'w' => 76, 'h' => 28, 'label' => '5. New job', 'font' => 11],
-        'b28' => ['x' => 40, 'y' => 212, 'w' => 124, 'h' => 28, 'label' => '28. GOSS escalation', 'font' => 11],
-        'b44' => ['x' => 368, 'y' => 310, 'w' => 100, 'h' => 28, 'label' => '44. Review form', 'font' => 11],
-    ];
-    $pathY = 300;
-    $gaps = [];
-    $order = ['b2', 'b3', 'diamond', 'b5'];
-    $textOverflow = [];
-    foreach ($shapes as $id => $shape) {
-        if (!isset($shape['label'])) {
-            continue;
-        }
-        $estWidth = strlen($shape['label']) * ($shape['font'] * 0.58);
-        $pad = 8;
-        if ($estWidth + $pad > $shape['w']) {
-            $textOverflow[] = ['shape' => $id, 'est' => round($estWidth, 1), 'box' => $shape['w']];
-        }
-    }
-    for ($i = 0; $i < count($order) - 1; $i++) {
-        $a = $shapes[$order[$i]];
-        $b = $shapes[$order[$i + 1]];
-        $gaps[$order[$i] . '->' . $order[$i + 1]] = $b['x'] - ($a['x'] + $a['w']);
-    }
-    $overlaps = [];
-    $keys = array_keys($shapes);
-    for ($i = 0; $i < count($keys); $i++) {
-        for ($j = $i + 1; $j < count($keys); $j++) {
-            $a = $shapes[$keys[$i]];
-            $b = $shapes[$keys[$j]];
-            $ox = min($a['x'] + $a['w'], $b['x'] + $b['w']) - max($a['x'], $b['x']);
-            $oy = min($a['y'] + $a['h'], $b['y'] + $b['h']) - max($a['y'], $b['y']);
-            if ($ox > 0 && $oy > 0) {
-                $overlaps[] = ['pair' => $keys[$i] . '/' . $keys[$j], 'px' => round($ox * $oy, 1)];
-            }
-        }
-    }
-    $arrowGaps = [
-        'b2_b3' => ['line' => 24, 'marker' => 7, 'min_recommended' => 16],
-        'b3_diamond' => ['line' => 26, 'marker' => 7, 'min_recommended' => 16],
-        'diamond_b5' => ['line' => 64, 'marker' => 7],
-    ];
-    $downwardArrows = [
-        ['id' => 'contact_b2', 'end' => [80, 150], 'box_top' => 156, 'arrow' => 'explicit_polygon'],
-        ['id' => 'goss_b28', 'end' => [102, 206], 'box_top' => 212, 'arrow' => 'explicit_polygon'],
-        ['id' => 'b28_b44', 'end' => [418, 304], 'box_top' => 310, 'arrow' => 'explicit_polygon'],
-    ];
-    $pathIssues = [];
-    if ($pathY >= 284 && $pathY <= 292) {
-        $pathIssues[] = 'b28_b44_horizontal_crosses_technical_officer_label';
-    }
-    $payload = [
-        'sessionId' => 'ac9752',
-        'runId' => 'arrow-marker-fix',
-        'hypothesisId' => 'F',
-        'location' => 'landing-illustrations.php:landing_hero_debug_geometry',
-        'message' => 'hero SVG geometry audit',
-        'data' => [
-            'horizontal_gaps' => $gaps,
-            'overlaps' => $overlaps,
-            'arrow_segments' => $arrowGaps,
-            'path_issues' => $pathIssues,
-            'text_overflow' => $textOverflow,
-            'downward_arrows' => $downwardArrows,
-            'marker_refX_horizontal' => 7,
-            'downward_arrow_style' => 'explicit_polygon',
-        ],
-        'timestamp' => (int) round(microtime(true) * 1000),
-    ];
-    file_put_contents($logPath, json_encode($payload) . "\n", FILE_APPEND);
-}
-// #endregion
-
 function landing_illustration_hero(): string
 {
-    // #region agent log
-    landing_hero_debug_geometry();
-    // #endregion
-
     return <<<'SVG'
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-label="Structured swimlane process map">
   <defs>
@@ -227,29 +142,6 @@ SVG;
 
 function landing_illustration_after(): string
 {
-    // #region agent log
-    $logPath = dirname(__DIR__) . '/.cursor/debug-ac9752.log';
-    $approverBottom = 128 + 72;
-    $financeTop = 212;
-    $horizontalY = 196;
-    file_put_contents($logPath, json_encode([
-        'sessionId' => 'ac9752',
-        'runId' => 'after-lane-routing',
-        'hypothesisId' => 'G',
-        'location' => 'landing-illustrations.php:landing_illustration_after',
-        'message' => 'cross-lane path audit',
-        'data' => [
-            'approver_lane' => ['y' => 128, 'bottom' => $approverBottom],
-            'finance_lane' => ['y' => $financeTop],
-            'horizontal_y' => $horizontalY,
-            'horizontal_inside_approver' => $horizontalY > 128 && $horizontalY < $approverBottom,
-            'old_horizontal_y' => 200,
-            'old_on_lane_border' => true,
-        ],
-        'timestamp' => (int) round(microtime(true) * 1000),
-    ]) . "\n", FILE_APPEND);
-    // #endregion
-
     return <<<'SVG'
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 320" role="img" aria-label="Structured editable process map">
   <defs>

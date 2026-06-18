@@ -2,8 +2,22 @@
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/includes/db.php';
-require_once dirname(__DIR__) . '/includes/helpers.php';
+require_once dirname(__DIR__) . '/includes/bootstrap.php';
+
+$needAuth = false;
+try {
+    $pdo = db();
+    $usersTable = $pdo->query("SHOW TABLES LIKE 'users'")->fetch();
+    if ($usersTable && (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn() > 0) {
+        $needAuth = true;
+    }
+} catch (Throwable) {
+    // Database may not exist yet during first-time setup.
+}
+
+if ($needAuth) {
+    require_min_role('admin');
+}
 
 $messages     = [];
 $sampleLoaded = false;

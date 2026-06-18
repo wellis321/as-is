@@ -9,6 +9,56 @@ function h(?string $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
+// ── CSRF ──────────────────────────────────────────────────────────────────────
+
+function csrf_token(): string
+{
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+
+    return $_SESSION['csrf_token'];
+}
+
+function csrf_field(): string
+{
+    return '<input type="hidden" name="csrf_token" value="' . h(csrf_token()) . '">';
+}
+
+function csrf_verify(): bool
+{
+    $token = $_POST['csrf_token'] ?? '';
+
+    return hash_equals(csrf_token(), $token);
+}
+
+// ── Flash messages ────────────────────────────────────────────────────────────
+
+function flash(string $type, string $msg): void
+{
+    $_SESSION['flash'][] = ['type' => $type, 'msg' => $msg];
+}
+
+function render_flash(): string
+{
+    if (empty($_SESSION['flash'])) {
+        return '';
+    }
+
+    $out = '';
+    foreach ($_SESSION['flash'] as $f) {
+        $cls = match ($f['type']) {
+            'success' => 'flash-success',
+            'error'   => 'flash-error',
+            default   => 'flash-info',
+        };
+        $out .= '<div class="flash ' . $cls . '">' . h($f['msg']) . '</div>';
+    }
+    unset($_SESSION['flash']);
+
+    return $out;
+}
+
 function asset_url(string $path): string
 {
     $base = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
@@ -146,8 +196,33 @@ function ensure_system_metadata(PDO $pdo): void
 
 // Single entry point for all incremental schema migrations.
 // Call this instead of the individual ensure_* functions.
+function ensure_auth_tables(PDO $pdo): void
+{
+    $users = $pdo->query("SHOW TABLES LIKE 'users'")->fetch();
+    if ($users) {
+        return;
+    }
+
+    $sqlPath = dirname(__DIR__) . '/sql/migrate_auth.sql';
+    if (is_readable($sqlPath)) {
+        run_sql_file($pdo, $sqlPath);
+    }
+
+    $adminUser = env('ADMIN_USER', '');
+    $adminPass = env('ADMIN_PASS', '');
+    if ($adminUser !== '' && $adminPass !== '') {
+        $hash = password_hash($adminPass, PASSWORD_BCRYPT);
+        $pdo->prepare(
+            'INSERT INTO users (username, password_hash, auth_provider, app_role, is_active)
+             VALUES (?, ?, ?, ?, 1)
+             ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), app_role = VALUES(app_role), is_active = 1'
+        )->execute([$adminUser, $hash, 'local', 'admin']);
+    }
+}
+
 function ensure_schema(PDO $pdo): void
 {
+    ensure_auth_tables($pdo);
     ensure_slug_column($pdo);
     ensure_v2_columns($pdo);
     ensure_global_systems($pdo);
@@ -640,7 +715,7 @@ function resolve_document_request(PDO $pdo): ?array
     return null;
 }
 
-function redirect(string $path): void
+function redirect(string $path): never
 {
     header('Location: ' . $path);
     exit;
@@ -933,6 +1008,91 @@ function render_layout(string $title, string $content, array $options = []): voi
         }
         .site-nav-cta:hover { background: var(--accent-dk); color: white; text-decoration: none; }
 
+        .site-nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .site-nav-user {
+            font-size: 0.8125rem;
+            color: oklch(82% 0.02 245);
+            max-width: 12rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .site-nav-link-secondary {
+            font-size: 0.8125rem;
+            color: oklch(88% 0.02 245);
+            text-decoration: none;
+        }
+
+        .site-nav-link-secondary:hover { color: white; text-decoration: underline; }
+
+        .flash {
+            padding: 0.75rem 1rem;
+            border-radius: var(--r);
+            margin-bottom: 1rem;
+            font-size: 0.9375rem;
+        }
+
+        .flash-success { background: oklch(94% 0.04 155); color: oklch(32% 0.1 155); border: 1px solid oklch(82% 0.06 155); }
+        .flash-error   { background: oklch(95% 0.04 25);  color: oklch(35% 0.12 25);  border: 1px solid oklch(85% 0.08 25); }
+        .flash-info    { background: oklch(95% 0.02 245); color: var(--text); border: 1px solid var(--border); }
+
+        .login-card {
+            max-width: 24rem;
+            margin: 2rem auto;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 1.5rem;
+            box-shadow: 0 2px 12px oklch(0% 0 0 / 0.06);
+        }
+
+        .login-card h1 { margin: 0 0 0.25rem; font-size: 1.35rem; }
+        .login-card .login-sub { color: var(--muted); font-size: 0.875rem; margin-bottom: 1.25rem; }
+
+        .btn--microsoft {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background: #2f2f2f;
+            color: #fff;
+            border: 1px solid #2f2f2f;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: var(--r);
+            padding: 0.55rem 1rem;
+            box-sizing: border-box;
+        }
+
+        .btn--microsoft:hover { background: #1a1a1a; border-color: #1a1a1a; color: #fff; text-decoration: none; }
+
+        .login-divider {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 0 0 1rem;
+            color: var(--muted);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .login-divider::before,
+        .login-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
         /* ── Wrap ────────────────────────────────────────────── */
         .wrap {
             max-width: 1200px;
@@ -1055,6 +1215,17 @@ function render_layout(string $title, string $content, array $options = []): voi
             border-radius: var(--r-lg);
             padding: 1.5rem;
             margin-bottom: 1.25rem;
+        }
+
+        .help-ref-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            align-items: start;
+        }
+
+        @media (max-width: 768px) {
+            .help-ref-grid { grid-template-columns: 1fr; }
         }
 
         .danger-zone {
@@ -1741,6 +1912,8 @@ function render_layout(string $title, string $content, array $options = []): voi
     $__nav = static function (string $page) use ($__pg): string {
         return $page === $__pg ? ' aria-current="page"' : '';
     };
+    $__loggedIn = function_exists('is_logged_in') && is_logged_in();
+    $__canEdit  = $__loggedIn && function_exists('can_edit_maps') && can_edit_maps();
     ?>
     <div class="site-nav-bar" role="banner">
         <div class="site-nav-inner">
@@ -1751,16 +1924,39 @@ function render_layout(string $title, string $content, array $options = []): voi
                 <a href="/systems.php"<?= $__nav('systems.php') ?>>Systems</a>
                 <a href="/help.php"<?= $__nav('help.php') ?>>Guidance</a>
             </nav>
-            <a href="/new.php" class="site-nav-cta">+ New AS-IS</a>
+            <div class="site-nav-actions">
+                <?php if ($__loggedIn): ?>
+                    <span class="site-nav-user" title="<?= h($_SESSION['admin_user'] ?? '') ?>"><?= h($_SESSION['admin_user'] ?? '') ?></span>
+                    <?php if (function_exists('is_microsoft_user') && !is_microsoft_user()): ?>
+                        <a href="/profile/change-password.php" class="site-nav-link-secondary">Password</a>
+                    <?php endif; ?>
+                    <a href="/logout.php" class="site-nav-link-secondary">Sign out</a>
+                <?php else: ?>
+                    <a href="/login.php" class="site-nav-link-secondary">Sign in</a>
+                <?php endif; ?>
+                <?php if ($__canEdit): ?>
+                    <a href="/new.php" class="site-nav-cta">+ New AS-IS</a>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 
     <main id="main" class="wrap">
+        <?= function_exists('render_flash') ? render_flash() : '' ?>
         <?= $content ?>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <script>lucide.createIcons();</script>
+
+    <footer style="background:var(--nav-bg);border-top:2px solid var(--accent);margin-top:auto;padding:.65rem 1.5rem;">
+        <div style="max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;font-size:.75rem;">
+            <span style="color:rgba(255,255,255,.45);font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-size:.68rem;margin-right:.25rem;">ERC Digital Tools</span>
+            <a href="<?= h(SOR_SITE_URL) ?>/" style="color:rgba(255,255,255,.75);text-decoration:none;padding:.15rem .45rem;border:1px solid rgba(255,255,255,.25);border-radius:3px;">SOR Management System</a>
+            <a href="<?= h(ERC_SITE_URL) ?>/" style="color:rgba(255,255,255,.75);text-decoration:none;padding:.15rem .45rem;border:1px solid rgba(255,255,255,.25);border-radius:3px;">ERC Portal</a>
+            <a href="<?= h(APP_URL) ?>/" style="color:rgba(255,255,255,.75);text-decoration:none;padding:.15rem .45rem;border:1px solid rgba(255,255,255,.25);border-radius:3px;">AS-IS Process Mapping</a>
+        </div>
+    </footer>
 </body>
 </html>
     <?php

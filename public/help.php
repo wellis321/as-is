@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/includes/helpers.php';
+require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 ob_start();
 ?>
@@ -60,7 +60,7 @@ ob_start();
 </div>
 
 <!-- ── Two-column reference cards ───────────────────────────────── -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+<div class="help-ref-grid">
 
     <!-- Step types -->
     <div class="card">

@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/includes/db.php';
-require_once dirname(__DIR__) . '/includes/helpers.php';
+require_once dirname(__DIR__) . '/includes/bootstrap.php';
+
+require_min_role('editor');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect('/documents.php');
