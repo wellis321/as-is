@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types=1);
+
+require_once dirname(__DIR__) . '/includes/db.php';
+require_once dirname(__DIR__) . '/includes/helpers.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    redirect('/index.php');
+}
+
+$pdo = db();
+$document = resolve_document_request($pdo);
+
+if ($document === null) {
+    redirect('/index.php');
+}
+
+$name = trim((string) ($_POST['name'] ?? ''));
+$color = trim((string) ($_POST['color'] ?? '#e8f0fe'));
+
+if ($name !== '') {
+    try {
+        create_lane($pdo, (int) $document['id'], $name, $color !== '' ? $color : '#e8f0fe');
+    } catch (Throwable $e) {
+        // Ignore for now; edit page remains usable.
+    }
+}
+
+redirect('/edit.php?slug=' . rawurlencode($document['slug']));

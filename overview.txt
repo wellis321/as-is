@@ -1,0 +1,15 @@
+I have this idea for a app or website.
+
+There are 2 images in the assets folder and in my work they are called -as ises. They represent who a system is or - "As is".
+
+People are interviewd or staff come together or somehow information is gathered about something and then this diagram is produced from that.
+
+It's like a flow or process diagramthat shows as much as possible about what has been captured and acts as a way to communicate that complex thiing.
+
+My idea is that instead of creating these hard to understand diagrams we build a AS-IS management system.
+
+they describe systems or whatever then relations and staff and the what next and what now and we create a fromnt end representation.
+
+I'd like to try and create something using php and sql. Locally the database would be somewhere like  and we can run php locally too.
+
+Please try and use the diagrams in the assets folder to better understand what an as-is really is and how we can create an as-is management system please.
