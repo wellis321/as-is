@@ -114,8 +114,8 @@ ob_start();
         <h2 class="landing-h2 landing-center">Why I built this</h2>
         <p class="landing-center landing-intro">
             I kept seeing the same pattern at work: valuable knowledge gathered from staff, poured into
-            Visio-style diagrams that became the only record of how things worked. They communicated
-            complexity, but they did not make it easy to work with.
+            Visio-style diagrams that became the only record of how things worked — static files that were
+            slow to change and awkward to explore once the detail grew.
         </p>
         <div class="landing-features">
             <article class="landing-feature-card">

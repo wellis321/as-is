@@ -2,8 +2,93 @@
 
 declare(strict_types=1);
 
+// #region agent log
+function landing_hero_debug_geometry(): void
+{
+    $logPath = dirname(__DIR__) . '/.cursor/debug-ac9752.log';
+    $shapes = [
+        'b1' => ['x' => 100, 'y' => 54, 'w' => 100, 'h' => 28, 'label' => '1. Contact', 'font' => 11],
+        'b2' => ['x' => 40, 'y' => 156, 'w' => 80, 'h' => 28, 'label' => '2. Take call', 'font' => 11],
+        'b3' => ['x' => 136, 'y' => 156, 'w' => 110, 'h' => 28, 'label' => '3. Log in Liberty', 'font' => 11],
+        'diamond' => ['x' => 262, 'y' => 156, 'w' => 48, 'h' => 28, 'label' => 'Route?', 'font' => 10],
+        'b5' => ['x' => 368, 'y' => 156, 'w' => 76, 'h' => 28, 'label' => '5. New job', 'font' => 11],
+        'b28' => ['x' => 40, 'y' => 212, 'w' => 124, 'h' => 28, 'label' => '28. GOSS escalation', 'font' => 11],
+        'b44' => ['x' => 368, 'y' => 310, 'w' => 100, 'h' => 28, 'label' => '44. Review form', 'font' => 11],
+    ];
+    $pathY = 300;
+    $gaps = [];
+    $order = ['b2', 'b3', 'diamond', 'b5'];
+    $textOverflow = [];
+    foreach ($shapes as $id => $shape) {
+        if (!isset($shape['label'])) {
+            continue;
+        }
+        $estWidth = strlen($shape['label']) * ($shape['font'] * 0.58);
+        $pad = 8;
+        if ($estWidth + $pad > $shape['w']) {
+            $textOverflow[] = ['shape' => $id, 'est' => round($estWidth, 1), 'box' => $shape['w']];
+        }
+    }
+    for ($i = 0; $i < count($order) - 1; $i++) {
+        $a = $shapes[$order[$i]];
+        $b = $shapes[$order[$i + 1]];
+        $gaps[$order[$i] . '->' . $order[$i + 1]] = $b['x'] - ($a['x'] + $a['w']);
+    }
+    $overlaps = [];
+    $keys = array_keys($shapes);
+    for ($i = 0; $i < count($keys); $i++) {
+        for ($j = $i + 1; $j < count($keys); $j++) {
+            $a = $shapes[$keys[$i]];
+            $b = $shapes[$keys[$j]];
+            $ox = min($a['x'] + $a['w'], $b['x'] + $b['w']) - max($a['x'], $b['x']);
+            $oy = min($a['y'] + $a['h'], $b['y'] + $b['h']) - max($a['y'], $b['y']);
+            if ($ox > 0 && $oy > 0) {
+                $overlaps[] = ['pair' => $keys[$i] . '/' . $keys[$j], 'px' => round($ox * $oy, 1)];
+            }
+        }
+    }
+    $arrowGaps = [
+        'b2_b3' => ['line' => 24, 'marker' => 7, 'min_recommended' => 16],
+        'b3_diamond' => ['line' => 26, 'marker' => 7, 'min_recommended' => 16],
+        'diamond_b5' => ['line' => 64, 'marker' => 7],
+    ];
+    $downwardArrows = [
+        ['id' => 'contact_b2', 'end' => [80, 150], 'box_top' => 156, 'arrow' => 'explicit_polygon'],
+        ['id' => 'goss_b28', 'end' => [102, 206], 'box_top' => 212, 'arrow' => 'explicit_polygon'],
+        ['id' => 'b28_b44', 'end' => [418, 304], 'box_top' => 310, 'arrow' => 'explicit_polygon'],
+    ];
+    $pathIssues = [];
+    if ($pathY >= 284 && $pathY <= 292) {
+        $pathIssues[] = 'b28_b44_horizontal_crosses_technical_officer_label';
+    }
+    $payload = [
+        'sessionId' => 'ac9752',
+        'runId' => 'arrow-marker-fix',
+        'hypothesisId' => 'F',
+        'location' => 'landing-illustrations.php:landing_hero_debug_geometry',
+        'message' => 'hero SVG geometry audit',
+        'data' => [
+            'horizontal_gaps' => $gaps,
+            'overlaps' => $overlaps,
+            'arrow_segments' => $arrowGaps,
+            'path_issues' => $pathIssues,
+            'text_overflow' => $textOverflow,
+            'downward_arrows' => $downwardArrows,
+            'marker_refX_horizontal' => 7,
+            'downward_arrow_style' => 'explicit_polygon',
+        ],
+        'timestamp' => (int) round(microtime(true) * 1000),
+    ];
+    file_put_contents($logPath, json_encode($payload) . "\n", FILE_APPEND);
+}
+// #endregion
+
 function landing_illustration_hero(): string
 {
+    // #region agent log
+    landing_hero_debug_geometry();
+    // #endregion
+
     return <<<'SVG'
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-label="Structured swimlane process map">
   <defs>
@@ -11,8 +96,8 @@ function landing_illustration_hero(): string
       <stop offset="0%" stop-color="#f0f6fc"/>
       <stop offset="100%" stop-color="#dceaf5"/>
     </linearGradient>
-    <marker id="hero-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
-      <polygon points="0 0, 7 3.5, 0 7" fill="#1a7a96"/>
+    <marker id="hero-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <polygon points="0 0, 8 4, 0 8" fill="#1a7a96"/>
     </marker>
   </defs>
 
@@ -20,46 +105,50 @@ function landing_illustration_hero(): string
 
   <!-- Swimlanes -->
   <rect x="20" y="20" width="600" height="78" rx="10" fill="#fff3e0" stroke="#d4a574" stroke-width="1.5"/>
-  <text x="36" y="46" font-family="Georgia, serif" font-size="15" font-weight="600" fill="#6b4f2a">Tenant</text>
 
   <rect x="20" y="106" width="600" height="148" rx="10" fill="#e8f5e9" stroke="#8fbf98" stroke-width="1.5"/>
-  <text x="36" y="132" font-family="Georgia, serif" font-size="15" font-weight="600" fill="#2f5c3a">Customer First</text>
 
   <rect x="20" y="262" width="600" height="118" rx="10" fill="#e3f2fd" stroke="#7aaed4" stroke-width="1.5"/>
-  <text x="36" y="288" font-family="Georgia, serif" font-size="15" font-weight="600" fill="#2a4f6e">Technical Officer</text>
 
-  <!-- Steps -->
-  <rect id="b1" x="80" y="54" width="104" height="28" rx="6" fill="#fff" stroke="#c9a66b" stroke-width="1.2"/>
-  <rect id="b2" x="44" y="148" width="100" height="28" rx="6" fill="#fff" stroke="#7cb587"/>
-  <rect id="b3" x="168" y="148" width="112" height="28" rx="6" fill="#fff" stroke="#7cb587"/>
-  <polygon id="b4" points="310,148 330,162 310,176 290,162" fill="#fff8e1" stroke="#d4a72c" stroke-width="1.2"/>
-
-  <rect id="b5" x="430" y="148" width="88" height="28" rx="6" fill="#fff" stroke="#7cb587"/>
-
-  <rect id="b28" x="44" y="200" width="128" height="28" rx="6" fill="#fff" stroke="#7cb587"/>
-
-  <rect id="b44" x="430" y="310" width="108" height="28" rx="6" fill="#fff" stroke="#7aaed4"/>
-
-  <!-- Arrows (edge to edge) — drawn before labels so text sits on top -->
-  <g fill="none" stroke="#1a7a96" stroke-width="2" marker-end="url(#hero-arrow)">
-    <path d="M 132 82 L 132 118 L 94 118 L 94 148"/>
-    <line x1="144" y1="162" x2="168" y2="162"/>
-    <line x1="280" y1="162" x2="290" y2="162"/>
-    <line x1="330" y1="162" x2="334" y2="162"/>
-    <line x1="406" y1="162" x2="430" y2="162" marker-end="url(#hero-arrow)"/>
-    <path d="M 310 176 L 310 188 L 108 188 L 108 200"/>
-    <path d="M 172 228 L 172 254 L 484 254 L 484 310"/>
+  <!-- Arrows (drawn first; boxes and labels sit on top) -->
+  <g fill="none" stroke="#1a7a96" stroke-width="2">
+    <path d="M 150 82 L 150 125 L 80 125 L 80 150"/>
+    <line x1="120" y1="170" x2="136" y2="170" marker-end="url(#hero-arrow)"/>
+    <line x1="246" y1="170" x2="262" y2="170" marker-end="url(#hero-arrow)"/>
+    <line x1="310" y1="170" x2="368" y2="170" marker-end="url(#hero-arrow)"/>
+    <path d="M 286 184 L 286 200 L 102 200 L 102 206"/>
+    <path d="M 102 240 L 102 300 L 418 300 L 418 304"/>
   </g>
 
-  <!-- Step labels (on top of arrows) -->
-  <text x="92" y="72" font-family="system-ui, sans-serif" font-size="12" fill="#333">1. Contact</text>
-  <text x="56" y="166" font-family="system-ui, sans-serif" font-size="12" fill="#333">2. Take call</text>
-  <text x="180" y="166" font-family="system-ui, sans-serif" font-size="12" fill="#333">3. Log in Liberty</text>
-  <rect x="334" y="148" width="72" height="18" rx="4" fill="#fff" stroke="#d4a72c" stroke-width="0.8"/>
-  <text x="342" y="161" font-family="system-ui, sans-serif" font-size="11" fill="#333">4. Route?</text>
-  <text x="442" y="166" font-family="system-ui, sans-serif" font-size="12" fill="#333">5. New job</text>
-  <text x="56" y="218" font-family="system-ui, sans-serif" font-size="12" fill="#333">28. GOSS escalation</text>
-  <text x="442" y="328" font-family="system-ui, sans-serif" font-size="12" fill="#333">44. Review form</text>
+  <!-- Steps -->
+  <rect id="b1" x="100" y="54" width="100" height="28" rx="6" fill="#fff" stroke="#c9a66b" stroke-width="1.2"/>
+  <rect id="b2" x="40" y="156" width="80" height="28" rx="6" fill="#fff" stroke="#7cb587"/>
+  <rect id="b3" x="136" y="156" width="110" height="28" rx="6" fill="#fff" stroke="#7cb587"/>
+  <polygon id="b4" points="286,156 310,170 286,184 262,170" fill="#fff8e1" stroke="#d4a72c" stroke-width="1.2"/>
+  <rect id="b5" x="368" y="156" width="76" height="28" rx="6" fill="#fff" stroke="#7cb587"/>
+  <rect id="b28" x="40" y="212" width="124" height="28" rx="6" fill="#fff" stroke="#7cb587"/>
+  <rect id="b44" x="368" y="310" width="100" height="28" rx="6" fill="#fff" stroke="#7aaed4"/>
+
+  <!-- Downward arrowheads (after boxes — line stops at base, tip touches box top) -->
+  <g fill="#1a7a96">
+    <polygon points="80,156 76,150 84,150"/>
+    <polygon points="102,212 98,206 106,206"/>
+    <polygon points="418,310 414,304 422,304"/>
+  </g>
+
+  <!-- Step labels (centred inside each shape) -->
+  <text x="150" y="72" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#333">1. Contact</text>
+  <text x="80" y="174" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#333">2. Take call</text>
+  <text x="191" y="174" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#333">3. Log in Liberty</text>
+  <text x="286" y="174" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#6b5620">Route?</text>
+  <text x="406" y="174" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#333">5. New job</text>
+  <text x="102" y="230" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#333">28. GOSS escalation</text>
+  <text x="418" y="328" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#333">44. Review form</text>
+
+  <!-- Lane titles (top-right, drawn last) -->
+  <text x="606" y="38" text-anchor="end" font-family="Georgia, serif" font-size="13" font-weight="600" fill="#6b4f2a">Tenant</text>
+  <text x="606" y="118" text-anchor="end" font-family="Georgia, serif" font-size="13" font-weight="600" fill="#2f5c3a">Customer First</text>
+  <text x="606" y="274" text-anchor="end" font-family="Georgia, serif" font-size="13" font-weight="600" fill="#2a4f6e">Technical Officer</text>
 </svg>
 SVG;
 }
@@ -138,11 +227,34 @@ SVG;
 
 function landing_illustration_after(): string
 {
+    // #region agent log
+    $logPath = dirname(__DIR__) . '/.cursor/debug-ac9752.log';
+    $approverBottom = 128 + 72;
+    $financeTop = 212;
+    $horizontalY = 196;
+    file_put_contents($logPath, json_encode([
+        'sessionId' => 'ac9752',
+        'runId' => 'after-lane-routing',
+        'hypothesisId' => 'G',
+        'location' => 'landing-illustrations.php:landing_illustration_after',
+        'message' => 'cross-lane path audit',
+        'data' => [
+            'approver_lane' => ['y' => 128, 'bottom' => $approverBottom],
+            'finance_lane' => ['y' => $financeTop],
+            'horizontal_y' => $horizontalY,
+            'horizontal_inside_approver' => $horizontalY > 128 && $horizontalY < $approverBottom,
+            'old_horizontal_y' => 200,
+            'old_on_lane_border' => true,
+        ],
+        'timestamp' => (int) round(microtime(true) * 1000),
+    ]) . "\n", FILE_APPEND);
+    // #endregion
+
     return <<<'SVG'
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 320" role="img" aria-label="Structured editable process map">
   <defs>
-    <marker id="after-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
-      <polygon points="0 0, 7 3.5, 0 7" fill="#1a7a96"/>
+    <marker id="after-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+      <polygon points="0 0, 8 4, 0 8" fill="#1a7a96"/>
     </marker>
   </defs>
   <rect width="520" height="320" rx="12" fill="#f2f8f5"/>
@@ -150,31 +262,32 @@ function landing_illustration_after(): string
   <text x="30" y="37" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#2a6e55">AS-IS Management</text>
 
   <rect x="20" y="60" width="480" height="58" rx="8" fill="#e8f5e9" stroke="#9cc9a5" stroke-width="1.2"/>
-  <text x="34" y="80" font-family="Georgia, serif" font-size="12" fill="#2f5c3a">Customer First</text>
   <rect x="34" y="88" width="72" height="22" rx="5" fill="#fff" stroke="#7cb587"/>
   <rect x="124" y="88" width="88" height="22" rx="5" fill="#fff" stroke="#7cb587"/>
-  <rect x="230" y="88" width="80" height="22" rx="5" fill="#fff" stroke="#7cb587"/>
+  <rect x="230" y="88" width="80" height="22" rx="5" fill="#fff" stroke="#7aaed4"/>
 
   <rect x="20" y="128" width="480" height="72" rx="8" fill="#fff8e1" stroke="#e0c878" stroke-width="1.2"/>
-  <text x="34" y="148" font-family="Georgia, serif" font-size="12" fill="#6b5620">Approver</text>
-  <rect x="34" y="156" width="80" height="22" rx="5" fill="#fff" stroke="#d4a72c"/>
-  <rect x="134" y="156" width="96" height="22" rx="5" fill="#fff" stroke="#d4a72c"/>
-  <polygon points="252,167 266,156 266,178 252,178" fill="#fff" stroke="#d4a72c"/>
-  <rect x="278" y="156" width="76" height="22" rx="5" fill="#fff" stroke="#d4a72c"/>
+  <rect x="34" y="156" width="88" height="22" rx="5" fill="#fff" stroke="#d4a72c"/>
+  <rect x="142" y="156" width="100" height="22" rx="5" fill="#fff" stroke="#d4a72c"/>
+  <rect x="262" y="156" width="88" height="22" rx="5" fill="#fff" stroke="#d4a72c"/>
 
   <rect x="20" y="212" width="480" height="58" rx="8" fill="#e3f2fd" stroke="#9ec0de" stroke-width="1.2"/>
-  <text x="34" y="232" font-family="Georgia, serif" font-size="12" fill="#2a4f6e">Finance</text>
   <rect x="34" y="240" width="84" height="22" rx="5" fill="#fff" stroke="#7aaed4"/>
   <rect x="138" y="240" width="92" height="22" rx="5" fill="#fff" stroke="#7aaed4"/>
 
-  <g fill="none" stroke="#1a7a96" stroke-width="2" marker-end="url(#after-arrow)">
-    <line x1="106" y1="99" x2="124" y2="99"/>
-    <line x1="212" y1="99" x2="230" y2="99"/>
-    <line x1="114" y1="167" x2="134" y2="167"/>
-    <line x1="230" y1="167" x2="252" y2="167"/>
-    <line x1="266" y1="167" x2="278" y2="167"/>
-    <path d="M 190 178 L 190 200 L 80 200 L 80 240"/>
+  <g fill="none" stroke="#1a7a96" stroke-width="2">
+    <line x1="106" y1="99" x2="124" y2="99" marker-end="url(#after-arrow)"/>
+    <line x1="212" y1="99" x2="230" y2="99" marker-end="url(#after-arrow)"/>
+    <line x1="122" y1="167" x2="142" y2="167" marker-end="url(#after-arrow)"/>
+    <line x1="242" y1="167" x2="262" y2="167" marker-end="url(#after-arrow)"/>
+    <path d="M 192 178 L 192 196 L 76 196 L 76 234"/>
   </g>
+  <polygon points="76,240 72,234 80,234" fill="#1a7a96"/>
+
+  <!-- Lane titles (top-right, above flow lines) -->
+  <text x="486" y="76" text-anchor="end" font-family="Georgia, serif" font-size="12" font-weight="600" fill="#2f5c3a">Customer First</text>
+  <text x="486" y="144" text-anchor="end" font-family="Georgia, serif" font-size="12" font-weight="600" fill="#6b5620">Approver</text>
+  <text x="486" y="228" text-anchor="end" font-family="Georgia, serif" font-size="12" font-weight="600" fill="#2a4f6e">Finance</text>
 
   <text x="340" y="252" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#2a6e55">↻ Live diagram</text>
   <text x="24" y="296" font-family="system-ui, sans-serif" font-size="11" fill="#5a7a6a">Editable lanes, steps, systems &amp; connections</text>
