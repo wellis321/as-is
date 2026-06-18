@@ -765,8 +765,9 @@ function build_mermaid(array $lanes, array $steps, array $connections): string
 
 // ── Layout ────────────────────────────────────────────────────────────────────
 
-function render_layout(string $title, string $content): void
+function render_layout(string $title, string $content, array $options = []): void
 {
+    $isLanding = !empty($options['landing']);
     ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1197,6 +1198,225 @@ function render_layout(string $title, string $content): void
         }
         .doc-title-link:hover { color: var(--accent); text-decoration: none; }
 
+        /* ── Marketing landing page ─────────────────────────── */
+        body.is-landing .wrap { max-width: none; padding: 0; }
+        body.is-landing main { padding: 0; }
+
+        .landing-hero {
+            background: linear-gradient(160deg, oklch(97% 0.02 245) 0%, oklch(94% 0.04 200) 100%);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .landing-hero-inner,
+        .landing-section-inner,
+        .landing-cta-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .landing-hero-inner {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2.5rem;
+            align-items: center;
+            padding-top: 3.5rem;
+            padding-bottom: 3.5rem;
+        }
+
+        .landing-eyebrow {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin: 0 0 1rem;
+        }
+
+        .landing-title {
+            font-family: var(--f-serif);
+            font-weight: 400;
+            font-size: clamp(2rem, 4.5vw, 3.1rem);
+            line-height: 1.12;
+            letter-spacing: -0.03em;
+            color: var(--text);
+            margin: 0 0 1.25rem;
+        }
+
+        .landing-lead {
+            font-size: 1.0625rem;
+            line-height: 1.65;
+            color: var(--muted);
+            margin: 0 0 1.75rem;
+            max-width: 46ch;
+        }
+
+        .landing-hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .btn-lg {
+            font-size: 0.9375rem;
+            padding: 0.7rem 1.25rem;
+        }
+
+        .landing-hero-visual { margin: 0; }
+
+        .landing-hero-visual img,
+        .landing-figure img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: var(--r-lg);
+            border: 1px solid var(--border);
+            box-shadow: 0 12px 40px oklch(70% 0.04 245 / 0.15);
+        }
+
+        .landing-section { padding: 4rem 0; }
+
+        .landing-section-alt {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .landing-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .landing-split-reverse .landing-figure { order: -1; }
+
+        .landing-h2 {
+            font-family: var(--f-serif);
+            font-weight: 400;
+            font-size: clamp(1.5rem, 2.5vw, 2rem);
+            letter-spacing: -0.02em;
+            margin: 0 0 1rem;
+            color: var(--text);
+        }
+
+        .landing-center { text-align: center; }
+        .landing-intro { max-width: 62ch; margin: 0 auto 2.5rem; }
+
+        .landing-figure { margin: 0; }
+
+        .landing-figure figcaption {
+            margin-top: 0.75rem;
+            font-size: 0.8125rem;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .landing-list,
+        .landing-checklist {
+            margin: 0;
+            padding-left: 1.2rem;
+            color: var(--muted);
+        }
+
+        .landing-list li,
+        .landing-checklist li {
+            margin-bottom: 0.5rem;
+            line-height: 1.55;
+        }
+
+        .landing-features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+        }
+
+        .landing-feature-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 1.5rem;
+        }
+
+        .landing-feature-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem;
+            color: var(--text);
+        }
+
+        .landing-feature-card p {
+            margin: 0;
+            font-size: 0.9375rem;
+        }
+
+        .landing-expect {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 2.5rem;
+            align-items: start;
+        }
+
+        .landing-expect-aside {
+            background: oklch(97% 0.02 200);
+            border: 1px solid oklch(88% 0.04 200);
+            border-radius: var(--r-lg);
+            padding: 1.5rem;
+        }
+
+        .landing-expect-aside h3 {
+            margin: 0 0 0.75rem;
+            font-size: 1rem;
+        }
+
+        .landing-expect-aside p { font-size: 0.9375rem; }
+
+        .landing-cta {
+            background: var(--nav-bg);
+            color: var(--nav-text);
+            padding: 3.5rem 0;
+        }
+
+        .landing-cta-inner { text-align: center; }
+
+        .landing-cta-title {
+            font-family: var(--f-serif);
+            font-weight: 400;
+            font-size: clamp(1.5rem, 3vw, 2.25rem);
+            margin: 0 0 0.75rem;
+            color: white;
+        }
+
+        .landing-cta p {
+            color: oklch(78% 0.02 245);
+            margin: 0 0 1.75rem;
+        }
+
+        .landing-cta .landing-hero-actions { justify-content: center; }
+
+        .btn-on-dark { background: var(--accent); color: white; }
+
+        .btn-on-dark-outline {
+            background: transparent;
+            border-color: oklch(55% 0.04 245);
+            color: oklch(92% 0.02 245);
+        }
+
+        .btn-on-dark-outline:hover {
+            background: oklch(28% 0.04 245);
+            border-color: oklch(70% 0.04 245);
+            color: white;
+        }
+
+        @media (max-width: 900px) {
+            .landing-hero-inner,
+            .landing-split,
+            .landing-features,
+            .landing-expect { grid-template-columns: 1fr; }
+
+            .landing-split-reverse .landing-figure { order: 0; }
+        }
+
         /* ── Build workflow tracker ─────────────────────────── */
         .build-tracker {
             display: flex;
@@ -1427,22 +1647,23 @@ function render_layout(string $title, string $content): void
         }
     </style>
 </head>
-<body>
+<body<?= $isLanding ? ' class="is-landing"' : '' ?>>
     <a href="#main" class="skip-link">Skip to main content</a>
 
     <?php
     $__pg = basename($_SERVER['SCRIPT_NAME'] ?? '');
-    $__nav = static function (string $href, string $page) use ($__pg): string {
+    $__nav = static function (string $page) use ($__pg): string {
         return $page === $__pg ? ' aria-current="page"' : '';
     };
     ?>
     <div class="site-nav-bar" role="banner">
         <div class="site-nav-inner">
-            <a href="/index.php" class="site-logo"<?= $__pg === 'index.php' ? ' aria-current="page"' : '' ?>>AS-IS</a>
+            <a href="/index.php" class="site-logo">AS-IS</a>
             <nav class="site-nav-links" aria-label="Main navigation">
-                <a href="/systems.php"<?= $__nav('/systems.php', 'systems.php') ?>>Systems</a>
-                <a href="/help.php"<?= $__nav('/help.php', 'help.php') ?>>Guidance</a>
-                <a href="/setup.php#samples"<?= $__nav('/setup.php', 'setup.php') ?>>Sample maps</a>
+                <a href="/index.php"<?= $__nav('index.php') ?>>Home</a>
+                <a href="/documents.php"<?= $__nav('documents.php') ?>>Process maps</a>
+                <a href="/systems.php"<?= $__nav('systems.php') ?>>Systems</a>
+                <a href="/help.php"<?= $__nav('help.php') ?>>Guidance</a>
             </nav>
             <a href="/new.php" class="site-nav-cta">+ New AS-IS</a>
         </div>

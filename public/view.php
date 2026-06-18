@@ -35,7 +35,7 @@ try {
         $connections = fetch_connections($pdo, $asIsId);
     }
 } catch (Throwable $e) {
-    $error = $e->getMessage();
+    $error = 'This map could not be loaded. Please try again.';
 }
 
 // JSON payload for the client-side SVG renderer.
@@ -71,7 +71,7 @@ if ($error || $document === null):
 ?>
 <header>
     <div><h1>Not found</h1><p><?= h($error ?? 'Unknown error') ?></p></div>
-    <a class="btn btn-secondary btn-sm" href="/index.php">Back</a>
+    <a class="btn btn-secondary btn-sm" href="/documents.php">Back</a>
 </header>
 <?php
     render_layout('Not found', ob_get_clean() ?: '');
@@ -101,7 +101,7 @@ endif;
     <div class="actions no-print">
         <a class="btn btn-secondary btn-sm" href="/view.php?slug=<?= rawurlencode($document['slug']) ?>&print=1" target="_blank">Print</a>
         <a class="btn btn-sm" href="/edit.php?slug=<?= rawurlencode($document['slug']) ?>">Edit</a>
-        <a class="btn btn-secondary btn-sm" href="/index.php">Back</a>
+        <a class="btn btn-secondary btn-sm" href="/documents.php">Back</a>
     </div>
 </header>
 

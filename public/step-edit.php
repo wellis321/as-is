@@ -11,7 +11,7 @@ ensure_schema($pdo);
 $document = resolve_document_request($pdo);
 
 if ($document === null) {
-    redirect('/index.php');
+    redirect('/documents.php');
 }
 
 $asIsId  = (int) $document['id'];
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             redirect('/edit.php?slug=' . rawurlencode($document['slug']) . '#steps');
         } catch (Throwable $e) {
-            $error = $e->getMessage();
+            $error = 'Could not save this step. Please try again.';
         }
     }
 }

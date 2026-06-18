@@ -2,150 +2,134 @@
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/includes/db.php';
 require_once dirname(__DIR__) . '/includes/helpers.php';
-
-$error     = null;
-$documents = [];
-
-try {
-    $pdo = db();
-    try { ensure_schema($pdo); } catch (Throwable) {} // best-effort migration
-    $documents = fetch_documents($pdo);
-} catch (Throwable $e) {
-    $error = $e->getMessage();
-}
 
 ob_start();
 ?>
-<header>
-    <div>
-        <?php if ($documents !== [] && !$error): ?>
-            <h1>Process maps
-                <span style="font-size:1rem;font-weight:400;font-family:var(--f-sans);
-                             color:var(--muted);letter-spacing:0;">(<?= count($documents) ?>)</span>
-            </h1>
-        <?php else: ?>
-            <h1>Process maps</h1>
-        <?php endif; ?>
-    </div>
-</header>
-
-<?php if ($error): ?>
-    <div class="notice">
-        Could not connect to the database. Make sure MAMP MySQL is running,
-        then visit <a href="/setup.php">setup</a>.
-        <br><br><strong>Error:</strong> <?= h($error) ?>
-    </div>
-    <div class="card">
-        <h2>Run locally</h2>
-        <p>From the project folder:</p>
-        <p><code>php -S localhost:8890 -t public</code></p>
-        <p style="margin:0;">Then open <code>http://localhost:8890</code>.
-           Database settings live in <code>.env</code>.</p>
-    </div>
-
-<?php elseif ($documents === []): ?>
-
-    <!-- ── First-time empty state ──────────────────────────────────── -->
-    <div class="home-empty">
-        <p class="home-empty-eyebrow">Ready to document your first process</p>
-        <h2 class="home-empty-heading">No process maps yet</h2>
-        <p class="home-empty-body">
-            An AS-IS document captures how a process currently works —
-            the people involved, the systems they use, and the flow of actions
-            from start to finish. It replaces hard-to-read diagrams with something
-            structured, editable, and easy to share.
-        </p>
-        <div class="actions" style="margin-top:1.75rem;">
-            <a class="btn" href="/new.php">Create your first AS-IS</a>
-            <a class="btn btn-secondary" href="/setup.php">Load example documents</a>
+<section class="landing-hero">
+    <div class="landing-hero-inner">
+        <div class="landing-hero-copy">
+            <p class="landing-eyebrow">AS-IS process mapping</p>
+            <h1 class="landing-title">Capture how work really happens — then make it clear</h1>
+            <p class="landing-lead">
+                When staff are interviewed or teams come together, the result is often a dense diagram
+                that is hard to read and harder to maintain. This site turns that captured knowledge
+                into structured, editable process maps anyone can follow.
+            </p>
+            <div class="landing-hero-actions">
+                <a class="btn btn-lg" href="/documents.php">Open your process maps</a>
+                <a class="btn btn-secondary btn-lg" href="/view.php?slug=sample-customer-first">See an example</a>
+            </div>
         </div>
-        <p style="margin-top:1.25rem;font-size:0.875rem;color:var(--muted);">
-            Not sure where to start?
-            <a href="/help.php">Read the guidance</a>.
+        <figure class="landing-hero-visual">
+            <img src="/images/hero-swimlanes.svg" alt="Illustration of a swimlane process map with connected steps across three teams" width="640" height="420">
+        </figure>
+    </div>
+</section>
+
+<section class="landing-section">
+    <div class="landing-section-inner landing-split">
+        <div>
+            <h2 class="landing-h2">The problem with traditional AS-IS diagrams</h2>
+            <p>
+                In many organisations, an <strong>AS-IS</strong> is the diagram that shows how a system
+                or process works <em>today</em> — who does what, which systems are involved, and what
+                happens next. They are usually built after workshops or interviews, then exported as
+                a single large image.
+            </p>
+            <p>
+                That works once. But when something changes — a new system, a new team, a tweaked handoff —
+                the diagram becomes outdated, cluttered, and difficult for new people to understand.
+            </p>
+        </div>
+        <figure class="landing-figure">
+            <img src="/images/diagram-before.svg" alt="Abstract illustration of a cluttered, hard-to-follow process diagram" width="520" height="320" loading="lazy">
+            <figcaption>Dense static diagrams are hard to read and painful to update.</figcaption>
+        </figure>
+    </div>
+</section>
+
+<section class="landing-section landing-section-alt">
+    <div class="landing-section-inner landing-split landing-split-reverse">
+        <figure class="landing-figure">
+            <img src="/images/diagram-after.svg" alt="Abstract illustration of a clean structured process map with swimlanes" width="520" height="320" loading="lazy">
+            <figcaption>Structured data generates a clearer map — and stays editable.</figcaption>
+        </figure>
+        <div>
+            <h2 class="landing-h2">What this tool does</h2>
+            <p>
+                Instead of drawing boxes and arrows by hand, you describe the process in plain terms:
+                swimlanes for teams and roles, steps for actions, systems for the tools involved,
+                and connections for what happens next.
+            </p>
+            <ul class="landing-list">
+                <li><strong>Swimlanes</strong> — who owns each part of the process</li>
+                <li><strong>Steps</strong> — numbered actions, decisions, starts and ends</li>
+                <li><strong>Systems</strong> — shared library of software and tools</li>
+                <li><strong>Connections</strong> — flow between steps, with labels like Yes / No</li>
+                <li><strong>Live diagrams</strong> — auto-generated maps you can view and print</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="landing-section">
+    <div class="landing-section-inner">
+        <h2 class="landing-h2 landing-center">Why I built this</h2>
+        <p class="landing-center landing-intro">
+            I kept seeing the same pattern at work: valuable knowledge gathered from staff, poured into
+            Visio-style diagrams that became the only record of how things worked. They communicated
+            complexity, but they did not make it easy to work with.
         </p>
+        <div class="landing-features">
+            <article class="landing-feature-card">
+                <h3>From interviews to structure</h3>
+                <p>Workshops and conversations still matter. This does not replace them — it gives what you learn a proper home.</p>
+            </article>
+            <article class="landing-feature-card">
+                <h3>Built for communication</h3>
+                <p>The goal is the same as a classic AS-IS: help people understand a complex thing. The difference is you can change it without redrawing everything.</p>
+            </article>
+            <article class="landing-feature-card">
+                <h3>A living record</h3>
+                <p>Publish maps when they are ready, edit them when reality shifts, and share links instead of emailing PDFs.</p>
+            </article>
+        </div>
     </div>
+</section>
 
-<?php else: ?>
-
-    <!-- ── Document list ───────────────────────────────────────────── -->
-    <div class="card" style="padding:0;overflow:hidden;">
-        <table style="table-layout:fixed;width:100%;">
-            <colgroup>
-                <col style="width:34%;"><!-- Title -->
-                <col style="width:19%;"><!-- Team -->
-                <col style="width:9%;"><!-- Status -->
-                <col style="width:6%;"><!-- Steps -->
-                <col style="width:13%;"><!-- Last updated -->
-                <col style="width:19%;"><!-- Actions -->
-            </colgroup>
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Team</th>
-                    <th>Status</th>
-                    <th style="text-align:right;padding-right:1.5rem;">Steps</th>
-                    <th>Last updated</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($documents as $doc):
-                    $isSample = str_starts_with($doc['slug'], 'sample-');
-                    $owner    = trim((string) ($doc['owner']      ?? ''));
-                    $dept     = trim((string) ($doc['department'] ?? ''));
-                    $team     = implode(' · ', array_filter([$owner, $dept]));
-                ?>
-                    <tr>
-                        <!-- Title + optional description, each clipped to one line -->
-                        <td>
-                            <div style="display:flex;align-items:baseline;gap:0.4rem;min-width:0;">
-                                <a class="doc-title-link td-clip"
-                                   href="/view.php?slug=<?= rawurlencode($doc['slug']) ?>"
-                                   title="<?= h($doc['title']) ?>"><?= h($doc['title']) ?></a>
-                                <?php if ($isSample): ?>
-                                    <span class="badge-example" style="flex-shrink:0;">Example</span>
-                                <?php endif; ?>
-                            </div>
-                            <?php if (!empty($doc['description'])): ?>
-                                <div class="td-clip"
-                                     style="font-size:0.8125rem;color:var(--muted);margin-top:0.1rem;"
-                                     title="<?= h($doc['description']) ?>"><?= h($doc['description']) ?></div>
-                            <?php endif; ?>
-                        </td>
-
-                        <!-- Team: clips with ellipsis, full value on hover via title -->
-                        <td class="td-clip"
-                            style="font-size:0.875rem;color:var(--muted);"
-                            title="<?= h($team ?: '') ?>"><?= h($team ?: '—') ?></td>
-
-                        <td>
-                            <span class="badge badge-<?= h($doc['status']) ?>"><?= h($doc['status']) ?></span>
-                        </td>
-
-                        <td style="text-align:right;padding-right:1.5rem;color:var(--muted);">
-                            <?= (int) $doc['step_count'] ?>
-                        </td>
-
-                        <td class="td-clip" style="font-size:0.875rem;color:var(--muted);">
-                            <?= h(date('d M Y', strtotime($doc['updated_at']))) ?>
-                        </td>
-
-                        <td style="vertical-align:middle;">
-                            <div class="row-actions">
-                                <a class="btn btn-sm"
-                                   href="/view.php?slug=<?= rawurlencode($doc['slug']) ?>">View</a>
-                                <a class="btn btn-secondary btn-sm"
-                                   href="/edit.php?slug=<?= rawurlencode($doc['slug']) ?>">Edit</a>
-                            </div>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+<section class="landing-section landing-section-alt">
+    <div class="landing-section-inner landing-expect">
+        <div>
+            <h2 class="landing-h2">What to expect</h2>
+            <p>This is a working management system, not just a diagram viewer. Here is what you can do today:</p>
+            <ul class="landing-checklist">
+                <li>Create and edit AS-IS documents with metadata (owner, department, version)</li>
+                <li>Build swimlanes, steps, system links, and connections</li>
+                <li>View horizontal swimlane maps and auto-generated flow diagrams</li>
+                <li>Browse a shared systems library used across all maps</li>
+                <li>Load sample maps to explore before building your own</li>
+            </ul>
+        </div>
+        <div class="landing-expect-aside">
+            <h3>Good to know</h3>
+            <p>New here? Start with the sample <a href="/view.php?slug=sample-customer-first">Customer First</a> or <a href="/view.php?slug=sample-purchase-to-pay">Purchase to Pay</a> examples.</p>
+            <p>Ready to build? <a href="/help.php">Read the guidance</a> for a step-by-step walkthrough.</p>
+            <p style="margin-bottom:0;">This will keep growing — the aim is a practical tool for teams who live with real processes, not polished slide-deck fiction.</p>
+        </div>
     </div>
+</section>
 
-<?php endif; ?>
+<section class="landing-cta">
+    <div class="landing-cta-inner">
+        <h2 class="landing-cta-title">Start mapping how things work today</h2>
+        <p>Open your process maps, try the examples, or create something new.</p>
+        <div class="landing-hero-actions">
+            <a class="btn btn-lg btn-on-dark" href="/documents.php">Your process maps</a>
+            <a class="btn btn-secondary btn-lg btn-on-dark-outline" href="/new.php">Create an AS-IS</a>
+            <a class="btn btn-secondary btn-lg btn-on-dark-outline" href="/view.php?slug=sample-purchase-to-pay">Another example</a>
+        </div>
+    </div>
+</section>
 <?php
-render_layout('Home', ob_get_clean() ?: '');
+render_layout('Home', ob_get_clean() ?: '', ['landing' => true]);

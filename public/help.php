@@ -39,7 +39,7 @@ ob_start();
     <div style="display:grid;gap:0;">
         <?php
         $quickSteps = [
-            ['1', 'Create a new AS-IS', 'Click <strong>New AS-IS</strong> on the home page. Give it a title, a description, and optional metadata (owner, department, date, version). Save it — you will land on the Edit page.'],
+            ['1', 'Create a new AS-IS', 'Click <strong>+ New AS-IS</strong> in the navigation (or go to <strong>Process maps</strong>). Give it a title, a description, and optional metadata (owner, department, date, version). Save it — you will land on the Edit page.'],
             ['2', 'Add swimlanes', 'Swimlanes represent the <em>people or teams</em> involved in the process — for example "Tenant", "Customer First", "Technical Officer". Add one lane per actor. Use the colour picker to colour-code them. Use the ↑ ↓ arrows to put them in the right order.'],
             ['3', 'Add systems &amp; tools', 'List the software systems or tools used in this process (e.g. Liberty Converse, NEC, DRS). You can then attach them to individual steps so it is clear which system each action takes place in.'],
             ['4', 'Add steps', 'Each step is one action in the process. Give it a step number (use the same numbering as your source diagram if you have one), choose which swimlane it belongs to, give it a title, and pick a <strong>step type</strong> and an <strong>action type</strong>. Tick any systems used at that step.'],

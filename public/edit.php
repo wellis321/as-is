@@ -17,7 +17,7 @@ if ($document === null) {
     ?>
     <header>
         <div><h1>Not found</h1><p>AS-IS document not found.</p></div>
-        <a class="btn btn-secondary btn-sm" href="/index.php">Back</a>
+        <a class="btn btn-secondary btn-sm" href="/documents.php">Back</a>
     </header>
     <?php
     render_layout('Not found', ob_get_clean() ?: '');
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $success = 'Changes saved.';
         } catch (Throwable $e) {
-            $error = $e->getMessage();
+            $error = 'Could not save your changes. Please try again.';
         }
     }
 }
@@ -104,7 +104,7 @@ ob_start();
         <?php if ($hasSteps): ?>
             <a class="btn btn-secondary btn-sm" href="/view.php?slug=<?= rawurlencode($document['slug']) ?>">View diagram</a>
         <?php endif; ?>
-        <a class="btn btn-secondary btn-sm" href="/index.php">All documents</a>
+        <a class="btn btn-secondary btn-sm" href="/documents.php">All documents</a>
     </div>
 </header>
 
@@ -179,14 +179,13 @@ ob_start();
             <summary style="font-size:0.8125rem;color:var(--muted);cursor:pointer;user-select:none;
                             list-style:none;display:flex;align-items:center;gap:0.3rem;">
                 <i data-lucide="settings-2" class="licon" style="width:0.85rem;height:0.85rem;"></i>
-                Advanced — edit URL slug
+                Advanced — short link name
             </summary>
             <div style="margin-top:0.75rem;max-width:480px;">
-                <label for="slug">URL slug</label>
+                <label for="slug">Link name</label>
                 <input type="text" id="slug" name="slug" value="<?= h($document['slug']) ?>">
                 <p class="field-help">
-                    Changing this updates the document's URL.
-                    Current: <code>/view.php?slug=<?= h($document['slug']) ?></code>
+                    Used when sharing this map. Keep it short, using letters, numbers, and hyphens.
                 </p>
             </div>
         </details>

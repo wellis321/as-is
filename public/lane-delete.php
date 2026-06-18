@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/includes/db.php';
 require_once dirname(__DIR__) . '/includes/helpers.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    redirect('/index.php');
+    redirect('/documents.php');
 }
 
 $pdo = db();
@@ -14,7 +14,7 @@ $document = resolve_document_request($pdo);
 $laneId = (int) ($_POST['lane_id'] ?? 0);
 
 if ($document === null || $laneId < 1) {
-    redirect('/index.php');
+    redirect('/documents.php');
 }
 
 $stmt = $pdo->prepare('SELECT id FROM lanes WHERE id = ? AND as_is_id = ?');

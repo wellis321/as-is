@@ -11,20 +11,20 @@ $document = resolve_document_request($pdo);
 $error = null;
 
 if ($document === null) {
-    redirect('/index.php');
+    redirect('/documents.php');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $confirmSlug = trim((string) ($_POST['confirm_slug'] ?? ''));
+    $confirmTitle = trim((string) ($_POST['confirm_title'] ?? ''));
 
-    if ($confirmSlug !== $document['slug']) {
-        $error = 'Confirmation slug did not match. Nothing was deleted.';
+    if (strcasecmp($confirmTitle, $document['title']) !== 0) {
+        $error = 'The title did not match. Nothing was deleted.';
     } else {
         try {
             delete_document($pdo, (int) $document['id']);
-            redirect('/index.php');
+            redirect('/documents.php');
         } catch (Throwable $e) {
-            $error = $e->getMessage();
+            $error = 'Could not delete this map. Please try again.';
         }
     }
 }
@@ -47,13 +47,13 @@ ob_start();
 
 <div class="card danger-zone">
     <p>You are about to delete <strong><?= h($document['title']) ?></strong> and all of its lanes, steps, systems, and connections.</p>
-    <p>Type the slug <code><?= h($document['slug']) ?></code> below to confirm.</p>
+    <p>Type the document title <strong><?= h($document['title']) ?></strong> below to confirm.</p>
 
     <form method="post" class="form-grid">
         <input type="hidden" name="slug" value="<?= h($document['slug']) ?>">
         <div>
-            <label for="confirm_slug">Confirm slug</label>
-            <input type="text" id="confirm_slug" name="confirm_slug" required autocomplete="off">
+            <label for="confirm_title">Confirm title</label>
+            <input type="text" id="confirm_title" name="confirm_title" required autocomplete="off">
         </div>
         <div class="actions">
             <button class="btn btn-danger" type="submit">Delete permanently</button>

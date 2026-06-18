@@ -98,7 +98,7 @@ ob_start();
 </div>
 <?php else: ?>
 <div class="card">
-    <a class="btn" href="/index.php">Open AS-IS list</a>
+    <a class="btn" href="/documents.php">Open AS-IS list</a>
 </div>
 <?php endif; ?>
 <?php

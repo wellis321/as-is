@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         $owner, $department, $capturedDate, $version);
             redirect('/edit.php?slug=' . rawurlencode($document['slug']));
         } catch (Throwable $e) {
-            $error = $e->getMessage();
+            $error = 'Could not create this map. Please check your details and try again.';
         }
     }
 }
