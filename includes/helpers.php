@@ -896,10 +896,10 @@ function render_layout(string $title, string $content, array $options = []): voi
             --surface:    oklch(100% 0 0);
             --text:       oklch(21% 0.04 245);
             --muted:      oklch(50% 0.04 245);
-            --accent:     oklch(54% 0.14 200);
-            --accent-dk:  oklch(46% 0.14 200);
+            --accent:     #006A51;
+            --accent-dk:  #005a44;
             --border:     oklch(88% 0.015 245);
-            --nav-bg:     oklch(19% 0.05 245);
+            --nav-bg:     #005a44;
             --nav-text:   oklch(95% 0.01 245);
             --success:    oklch(42% 0.14 155);
             --warning:    oklch(65% 0.15 68);
@@ -941,76 +941,108 @@ function render_layout(string $title, string $content, array $options = []): voi
         }
         .skip-link:focus { top: 0; }
 
-        /* ── Site navigation ─────────────────────────────────── */
-        .site-nav-bar {
-            background: var(--nav-bg);
-            border-bottom: 3px solid var(--accent);
+        /* ── Topbar ──────────────────────────────────────────── */
+        .site-topbar {
+            background-color: #005a44;
+            padding: 0.4rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.7);
+        }
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: inherit;
+            text-decoration: none;
+            min-width: 0;
+        }
+        .topbar-left span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .topbar-leaves { width: 28px; height: 20px; object-fit: contain; display: block; flex-shrink: 0; }
+        .topbar-right { display: flex; align-items: center; gap: 1rem; margin-left: auto; flex-shrink: 0; }
+        .topbar-user { font-size: 0.72rem; color: rgba(255,255,255,0.65); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 14rem; }
+        .topbar-signout,
+        .topbar-signout:link,
+        .topbar-signout:visited {
+            color: #fff !important;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-decoration: none !important;
+            white-space: nowrap;
+            padding: 0.28rem 0.65rem;
+            border: 1px solid rgba(255,255,255,0.55);
+            border-radius: 4px;
+            background: rgba(255,255,255,0.14);
+        }
+        .topbar-signout:hover { background: rgba(255,255,255,0.24); border-color: #fff; color: #fff !important; text-decoration: none !important; }
+
+        /* ── Site header / nav ───────────────────────────────── */
+        .site-header {
+            background: #006A51;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             position: sticky;
             top: 0;
             z-index: 100;
         }
 
-        .site-nav-inner {
+        .header-inner {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 1.5rem;
-            height: 54px;
+            padding: 0.75rem 2rem;
+            min-height: 56px;
             display: flex;
             align-items: center;
+            gap: 1.5rem;
+            position: relative;
         }
 
         .site-logo {
-            font-family: var(--f-serif);
-            font-style: italic;
-            font-weight: 400;
-            font-size: 1.2rem;
-            color: var(--nav-text);
-            text-decoration: none;
-            letter-spacing: -0.02em;
-            padding-right: 2.5rem;
-            flex-shrink: 0;
-        }
-        .site-logo:hover,
-        .site-logo[aria-current="page"] { color: white; text-decoration: none; }
-
-        .site-nav-links {
             display: flex;
-            flex: 1;
+            flex-direction: column;
+            text-decoration: none;
+            flex-shrink: 0;
+            gap: 0.15rem;
+            padding: 0.2rem 0;
+        }
+        .site-logo:hover { text-decoration: none; }
+        .logo-name {
+            font-family: var(--f-sans);
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.01em;
+            line-height: 1.2;
+        }
+        .logo-subtitle {
+            font-family: var(--f-sans);
+            font-size: 10px;
+            color: rgba(255,255,255,0.8);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            line-height: 1.4;
         }
 
-        .site-nav-links a {
-            font-size: 0.875rem;
-            color: oklch(72% 0.025 245);
-            text-decoration: none;
-            padding: 0 0.9rem;
-            height: 54px;
+        .site-nav {
             display: flex;
             align-items: center;
-            border-bottom: 3px solid transparent;
-            margin-bottom: -3px;
-            transition: color 120ms, border-color 120ms;
+            gap: 0.1rem;
+            flex: 1;
         }
-        .site-nav-links a:hover,
-        .site-nav-links a[aria-current="page"] {
-            color: white;
-            border-bottom-color: var(--accent);
+        .site-nav a {
+            display: block;
+            padding: 0.45rem 0.7rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: rgba(255,255,255,0.85);
+            border-radius: 4px;
+            transition: background 120ms, color 120ms;
+            white-space: nowrap;
             text-decoration: none;
         }
-
-        .site-nav-cta {
-            font-family: var(--f-sans);
-            font-size: 0.8125rem;
-            font-weight: 600;
-            background: var(--accent);
-            color: white;
-            padding: 0.45rem 0.9rem;
-            border-radius: var(--r);
-            text-decoration: none;
-            flex-shrink: 0;
-            margin-left: 1rem;
-            transition: background 120ms;
-        }
-        .site-nav-cta:hover { background: var(--accent-dk); color: white; text-decoration: none; }
+        .site-nav a:hover { background: rgba(255,255,255,0.12); color: #fff; text-decoration: none; }
+        .site-nav a[aria-current="page"] { background: #008062; color: #fff; font-weight: 600; }
 
         .site-nav-actions {
             display: flex;
@@ -1019,23 +1051,74 @@ function render_layout(string $title, string $content, array $options = []): voi
             margin-left: auto;
             flex-shrink: 0;
         }
-
-        .site-nav-user {
+        .site-nav-cta {
+            font-family: var(--f-sans);
             font-size: 0.8125rem;
-            color: oklch(82% 0.02 245);
-            max-width: 12rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            font-weight: 600;
+            background: rgba(255,255,255,0.18);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.4);
+            padding: 0.45rem 0.9rem;
+            border-radius: var(--r);
+            text-decoration: none;
+            flex-shrink: 0;
+            transition: background 120ms, border-color 120ms;
         }
+        .site-nav-cta:hover { background: rgba(255,255,255,0.28); border-color: rgba(255,255,255,0.65); color: white; text-decoration: none; }
 
         .site-nav-link-secondary {
-            font-size: 0.8125rem;
-            color: oklch(88% 0.02 245);
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.75);
             text-decoration: none;
+            padding: 0.3rem 0.5rem;
         }
+        .site-nav-link-secondary:hover { color: white; text-decoration: none; }
 
-        .site-nav-link-secondary:hover { color: white; text-decoration: underline; }
+        /* ── Hamburger / mobile nav ──────────────────────────── */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 0.5rem;
+            background: none;
+            border: none;
+            border-radius: 4px;
+        }
+        .hamburger span { display: block; width: 24px; height: 2px; background: #fff; border-radius: 2px; transition: all 0.2s ease; }
+        .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .hamburger.open span:nth-child(2) { opacity: 0; }
+        .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+        .mobile-nav {
+            display: none;
+            background: #005a44;
+            padding: 1rem 2rem;
+            flex-direction: column;
+            gap: 0.25rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .mobile-nav.open { display: flex; max-height: calc(100vh - 110px); overflow-y: auto; }
+        .mobile-nav a {
+            display: block;
+            padding: 0.6rem 0.75rem;
+            color: rgba(255,255,255,0.85);
+            font-size: 0.9rem;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .mobile-nav a:hover,
+        .mobile-nav a[aria-current="page"] { background: rgba(255,255,255,0.1); color: #fff; }
+        .mobile-nav-signout { margin-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 0.75rem !important; }
+
+        @media (max-width: 768px) {
+            .site-topbar { padding: 0.4rem 1rem; }
+            .header-inner { padding: 0.6rem 1rem; }
+            .site-nav, .site-nav-actions { display: none; }
+            .hamburger { display: flex; margin-left: auto; }
+            .topbar-user { display: none; }
+        }
 
         .flash {
             padding: 0.75rem 1rem;
@@ -1945,7 +2028,7 @@ function render_layout(string $title, string $content, array $options = []): voi
 
         /* ── Print ───────────────────────────────────────────── */
         @media print {
-            .site-nav-bar, .no-print { display: none !important; }
+            .site-topbar, .site-header, .no-print { display: none !important; }
             .print-only-lanes { display: block !important; }
             body { background: white; }
             .wrap { padding: 0; max-width: 100%; }
@@ -1964,10 +2047,31 @@ function render_layout(string $title, string $content, array $options = []): voi
     $__loggedIn = function_exists('is_logged_in') && is_logged_in();
     $__canEdit  = $__loggedIn && function_exists('can_edit_maps') && can_edit_maps();
     ?>
-    <div class="site-nav-bar" role="banner">
-        <div class="site-nav-inner">
-            <a href="/index.php" class="site-logo">AS-IS</a>
-            <nav class="site-nav-links" aria-label="Main navigation">
+
+    <!-- Topbar -->
+    <div class="site-topbar">
+        <div class="topbar-left">
+            <img src="/images/leaves.png" alt="" class="topbar-leaves" width="28" height="20">
+            <span>East Renfrewshire Council &mdash; Housing Digital Transformation</span>
+        </div>
+        <div class="topbar-right">
+            <?php if ($__loggedIn): ?>
+                <span class="topbar-user" title="<?= h($_SESSION['admin_user'] ?? '') ?>"><?= h($_SESSION['admin_user'] ?? '') ?></span>
+                <a href="/logout.php" class="topbar-signout">Sign out</a>
+            <?php else: ?>
+                <a href="/login.php" class="topbar-signout">Sign in</a>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Main navigation -->
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a href="/index.php" class="site-logo" aria-label="AS-IS Process Mapping — Home">
+                <span class="logo-name">AS-IS Process Mapping</span>
+                <span class="logo-subtitle">ERC Digital Tools</span>
+            </a>
+            <nav class="site-nav" aria-label="Main navigation">
                 <a href="/index.php"<?= $__nav('index.php') ?>>Home</a>
                 <a href="/documents.php"<?= $__nav('documents.php') ?>>Process maps</a>
                 <a href="/systems.php"<?= $__nav('systems.php') ?>>Systems</a>
@@ -1975,20 +2079,33 @@ function render_layout(string $title, string $content, array $options = []): voi
             </nav>
             <div class="site-nav-actions">
                 <?php if ($__loggedIn): ?>
-                    <span class="site-nav-user" title="<?= h($_SESSION['admin_user'] ?? '') ?>"><?= h($_SESSION['admin_user'] ?? '') ?></span>
                     <?php if (function_exists('is_microsoft_user') && !is_microsoft_user()): ?>
                         <a href="/profile/change-password.php" class="site-nav-link-secondary">Password</a>
                     <?php endif; ?>
-                    <a href="/logout.php" class="site-nav-link-secondary">Sign out</a>
-                <?php else: ?>
-                    <a href="/login.php" class="site-nav-link-secondary">Sign in</a>
                 <?php endif; ?>
                 <?php if ($__canEdit): ?>
                     <a href="/new.php" class="site-nav-cta">+ New AS-IS</a>
                 <?php endif; ?>
             </div>
+            <button class="hamburger" id="asis-hamburger" aria-label="Toggle navigation" aria-expanded="false" aria-controls="asis-mobile-nav">
+                <span></span><span></span><span></span>
+            </button>
         </div>
-    </div>
+        <nav class="mobile-nav" id="asis-mobile-nav" aria-label="Mobile navigation">
+            <a href="/index.php"<?= $__nav('index.php') ?>>Home</a>
+            <a href="/documents.php"<?= $__nav('documents.php') ?>>Process maps</a>
+            <a href="/systems.php"<?= $__nav('systems.php') ?>>Systems</a>
+            <a href="/help.php"<?= $__nav('help.php') ?>>Guidance</a>
+            <?php if ($__loggedIn): ?>
+                <?php if (function_exists('is_microsoft_user') && !is_microsoft_user()): ?>
+                    <a href="/profile/change-password.php" class="mobile-nav-signout">Password</a>
+                <?php endif; ?>
+                <a href="/logout.php" class="mobile-nav-signout">Sign out</a>
+            <?php else: ?>
+                <a href="/login.php" class="mobile-nav-signout">Sign in</a>
+            <?php endif; ?>
+        </nav>
+    </header>
 
     <main id="main" class="wrap">
         <?= function_exists('render_flash') ? render_flash() : '' ?>
@@ -1997,8 +2114,27 @@ function render_layout(string $title, string $content, array $options = []): voi
 
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
     <script>lucide.createIcons();</script>
+    <script>
+    (function(){
+        var ham = document.getElementById('asis-hamburger');
+        var mnav = document.getElementById('asis-mobile-nav');
+        if (!ham || !mnav) return;
+        ham.addEventListener('click', function(){
+            var open = mnav.classList.toggle('open');
+            ham.classList.toggle('open', open);
+            ham.setAttribute('aria-expanded', String(open));
+        });
+        document.addEventListener('click', function(e){
+            if (!ham.contains(e.target) && !mnav.contains(e.target)){
+                mnav.classList.remove('open');
+                ham.classList.remove('open');
+                ham.setAttribute('aria-expanded', 'false');
+            }
+        });
+    })();
+    </script>
 
-    <footer style="background:var(--nav-bg);border-top:2px solid var(--accent);padding:.65rem 1.5rem;">
+    <footer style="background:#005a44;border-top:2px solid #006A51;padding:.65rem 1.5rem;">
         <div style="max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;font-size:.75rem;">
             <span style="color:rgba(255,255,255,.45);font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-size:.68rem;margin-right:.25rem;">ERC Digital Tools</span>
             <a href="<?= h(SOR_SITE_URL) ?>/" style="color:rgba(255,255,255,.75);text-decoration:none;padding:.15rem .45rem;border:1px solid rgba(255,255,255,.25);border-radius:3px;">SOR Management System</a>
