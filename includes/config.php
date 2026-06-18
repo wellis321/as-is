@@ -22,6 +22,7 @@ define('SESSION_SECRET', env('SESSION_SECRET', 'changeme') ?? 'changeme');
 define('SOR_SITE_URL', rtrim(env('SOR_SITE_URL', 'https://papayawhip-hamster-802775.hostingersite.com') ?? '', '/'));
 define('ERC_SITE_URL', rtrim(env('ERC_SITE_URL', 'https://aqua-quetzal-992173.hostingersite.com') ?? '', '/'));
 
+header('X-Robots-Tag: noindex, nofollow, noarchive, nosnippet');
 header('X-Frame-Options: DENY');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
