@@ -1,0 +1,34 @@
+# Route all web traffic into public/ (Hostinger: repo root is public_html)
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Site root → app home
+    RewriteRule ^$ public/index.php [L]
+
+    # Don't rewrite real /public/ requests (e.g. /public/index.php)
+    RewriteRule ^public/ - [L]
+
+    # Everything else → public/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Block web access to app code outside public/
+<IfModule mod_authz_core.c>
+    RedirectMatch 403 ^/(config|includes|sql)(/|$)
+</IfModule>
+
+<Files ".env">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</Files>
+
+<Files ".env.example">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</Files>

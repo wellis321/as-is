@@ -1,0 +1,8 @@
+DirectoryIndex index.php
+
+# Block direct access to SQL dumps if ever copied here by mistake
+<FilesMatch "\.(sql|md|example)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>
