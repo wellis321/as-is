@@ -5,45 +5,61 @@ declare(strict_types=1);
 function landing_illustration_hero(): string
 {
     return <<<'SVG'
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-label="Structured swimlane process map">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-label="Structured swimlane process map">
   <defs>
     <linearGradient id="hero-bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#f0f6fc"/>
       <stop offset="100%" stop-color="#dceaf5"/>
     </linearGradient>
-    <marker id="hero-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-      <path d="M0,0 L6,3 L0,6 Z" fill="#1a7a96"/>
+    <marker id="hero-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+      <polygon points="0 0, 7 3.5, 0 7" fill="#1a7a96"/>
     </marker>
   </defs>
-  <rect width="640" height="420" rx="16" fill="url(#hero-bg)"/>
-  <rect x="24" y="24" width="592" height="72" rx="10" fill="#fff3e0" stroke="#d4a574" stroke-width="1.5"/>
-  <text x="40" y="50" font-family="Georgia, serif" font-size="15" font-weight="600" fill="#6b4f2a">Tenant</text>
-  <rect x="48" y="62" width="96" height="26" rx="6" fill="#fff" stroke="#c9a66b" stroke-width="1.2"/>
-  <text x="58" y="79" font-family="system-ui, sans-serif" font-size="12" fill="#333">1. Contact service</text>
 
-  <rect x="24" y="108" width="592" height="148" rx="10" fill="#e8f5e9" stroke="#8fbf98" stroke-width="1.5"/>
-  <text x="40" y="134" font-family="Georgia, serif" font-size="15" font-weight="600" fill="#2f5c3a">Customer First</text>
-  <rect x="56" y="150" width="108" height="26" rx="6" fill="#fff" stroke="#7cb587"/>
-  <text x="66" y="167" font-family="system-ui, sans-serif" font-size="12" fill="#333">2. Take call</text>
-  <rect x="188" y="150" width="118" height="26" rx="6" fill="#fff" stroke="#7cb587"/>
-  <text x="198" y="167" font-family="system-ui, sans-serif" font-size="12" fill="#333">3. Log in Liberty</text>
-  <polygon points="338,163 358,151 358,175" fill="#fff8e1" stroke="#d4a72c" stroke-width="1.2"/>
-  <text x="366" y="167" font-family="system-ui, sans-serif" font-size="12" fill="#333">4. Route?</text>
-  <rect x="450" y="150" width="98" height="26" rx="6" fill="#fff" stroke="#7cb587"/>
-  <text x="460" y="167" font-family="system-ui, sans-serif" font-size="12" fill="#333">5. New job</text>
-  <rect x="56" y="196" width="130" height="26" rx="6" fill="#fff" stroke="#7cb587"/>
-  <text x="66" y="213" font-family="system-ui, sans-serif" font-size="12" fill="#333">28. GOSS escalation</text>
+  <rect width="640" height="400" rx="16" fill="url(#hero-bg)"/>
 
-  <rect x="24" y="272" width="592" height="124" rx="10" fill="#e3f2fd" stroke="#7aaed4" stroke-width="1.5"/>
-  <text x="40" y="298" font-family="Georgia, serif" font-size="15" font-weight="600" fill="#2a4f6e">Technical Officer</text>
-  <rect x="450" y="314" width="108" height="26" rx="6" fill="#fff" stroke="#7aaed4"/>
-  <text x="460" y="331" font-family="system-ui, sans-serif" font-size="12" fill="#333">44. Review form</text>
+  <!-- Swimlanes -->
+  <rect x="20" y="20" width="600" height="78" rx="10" fill="#fff3e0" stroke="#d4a574" stroke-width="1.5"/>
+  <text x="36" y="46" font-family="Georgia, serif" font-size="15" font-weight="600" fill="#6b4f2a">Tenant</text>
 
-  <path d="M144,88 C160,118 170,132 188,150" fill="none" stroke="#1a7a96" stroke-width="2" marker-end="url(#hero-arrow)"/>
-  <line x1="164" y1="163" x2="186" y2="163" stroke="#1a7a96" stroke-width="2" marker-end="url(#hero-arrow)"/>
-  <line x1="306" y1="163" x2="336" y2="163" stroke="#1a7a96" stroke-width="2" marker-end="url(#hero-arrow)"/>
-  <line x1="358" y1="175" x2="448" y2="208" stroke="#1a7a96" stroke-width="2" marker-end="url(#hero-arrow)"/>
-  <path d="M186,222 C300,260 380,300 450,327" fill="none" stroke="#1a7a96" stroke-width="2" marker-end="url(#hero-arrow)"/>
+  <rect x="20" y="106" width="600" height="148" rx="10" fill="#e8f5e9" stroke="#8fbf98" stroke-width="1.5"/>
+  <text x="36" y="132" font-family="Georgia, serif" font-size="15" font-weight="600" fill="#2f5c3a">Customer First</text>
+
+  <rect x="20" y="262" width="600" height="118" rx="10" fill="#e3f2fd" stroke="#7aaed4" stroke-width="1.5"/>
+  <text x="36" y="288" font-family="Georgia, serif" font-size="15" font-weight="600" fill="#2a4f6e">Technical Officer</text>
+
+  <!-- Steps -->
+  <rect id="b1" x="80" y="54" width="104" height="28" rx="6" fill="#fff" stroke="#c9a66b" stroke-width="1.2"/>
+  <rect id="b2" x="44" y="148" width="100" height="28" rx="6" fill="#fff" stroke="#7cb587"/>
+  <rect id="b3" x="168" y="148" width="112" height="28" rx="6" fill="#fff" stroke="#7cb587"/>
+  <polygon id="b4" points="310,148 330,162 310,176 290,162" fill="#fff8e1" stroke="#d4a72c" stroke-width="1.2"/>
+
+  <rect id="b5" x="430" y="148" width="88" height="28" rx="6" fill="#fff" stroke="#7cb587"/>
+
+  <rect id="b28" x="44" y="200" width="128" height="28" rx="6" fill="#fff" stroke="#7cb587"/>
+
+  <rect id="b44" x="430" y="310" width="108" height="28" rx="6" fill="#fff" stroke="#7aaed4"/>
+
+  <!-- Arrows (edge to edge) — drawn before labels so text sits on top -->
+  <g fill="none" stroke="#1a7a96" stroke-width="2" marker-end="url(#hero-arrow)">
+    <path d="M 132 82 L 132 118 L 94 118 L 94 148"/>
+    <line x1="144" y1="162" x2="168" y2="162"/>
+    <line x1="280" y1="162" x2="290" y2="162"/>
+    <line x1="330" y1="162" x2="334" y2="162"/>
+    <line x1="406" y1="162" x2="430" y2="162" marker-end="url(#hero-arrow)"/>
+    <path d="M 310 176 L 310 188 L 108 188 L 108 200"/>
+    <path d="M 172 228 L 172 254 L 484 254 L 484 310"/>
+  </g>
+
+  <!-- Step labels (on top of arrows) -->
+  <text x="92" y="72" font-family="system-ui, sans-serif" font-size="12" fill="#333">1. Contact</text>
+  <text x="56" y="166" font-family="system-ui, sans-serif" font-size="12" fill="#333">2. Take call</text>
+  <text x="180" y="166" font-family="system-ui, sans-serif" font-size="12" fill="#333">3. Log in Liberty</text>
+  <rect x="334" y="148" width="72" height="18" rx="4" fill="#fff" stroke="#d4a72c" stroke-width="0.8"/>
+  <text x="342" y="161" font-family="system-ui, sans-serif" font-size="11" fill="#333">4. Route?</text>
+  <text x="442" y="166" font-family="system-ui, sans-serif" font-size="12" fill="#333">5. New job</text>
+  <text x="56" y="218" font-family="system-ui, sans-serif" font-size="12" fill="#333">28. GOSS escalation</text>
+  <text x="442" y="328" font-family="system-ui, sans-serif" font-size="12" fill="#333">44. Review form</text>
 </svg>
 SVG;
 }
@@ -51,30 +67,71 @@ SVG;
 function landing_illustration_before(): string
 {
     return <<<'SVG'
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 340" role="img" aria-label="Cluttered traditional process diagram">
-  <rect width="520" height="340" rx="12" fill="#faf5f5"/>
-  <rect x="20" y="20" width="480" height="36" rx="8" fill="#fff" stroke="#e8d0d0"/>
-  <text x="36" y="43" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#9b4545">Traditional AS-IS export</text>
-  <g opacity="0.9">
-    <rect x="28" y="72" width="62" height="24" rx="4" fill="#fff" stroke="#ccc"/><rect x="98" y="64" width="54" height="24" rx="4" fill="#fff" stroke="#ccc"/>
-    <rect x="168" y="78" width="68" height="24" rx="4" fill="#fff" stroke="#ccc"/><rect x="252" y="60" width="58" height="24" rx="4" fill="#fff" stroke="#ccc"/>
-    <rect x="326" y="74" width="64" height="24" rx="4" fill="#fff" stroke="#ccc"/><rect x="408" y="66" width="56" height="24" rx="4" fill="#fff" stroke="#ccc"/>
-    <rect x="44" y="118" width="70" height="24" rx="4" fill="#fff" stroke="#ccc"/><rect x="132" y="132" width="52" height="24" rx="4" fill="#fff" stroke="#ccc"/>
-    <rect x="204" y="112" width="76" height="24" rx="4" fill="#fff" stroke="#ccc"/><rect x="300" y="126" width="60" height="24" rx="4" fill="#fff" stroke="#ccc"/>
-    <rect x="384" y="116" width="68" height="24" rx="4" fill="#fff" stroke="#ccc"/><rect x="460" y="130" width="48" height="24" rx="4" fill="#fff" stroke="#ccc"/>
-    <rect x="36" y="172" width="58" height="24" rx="4" fill="#fff" stroke="#ccc"/><rect x="112" y="184" width="72" height="24" rx="4" fill="#fff" stroke="#ccc"/>
-    <rect x="206" y="168" width="64" height="24" rx="4" fill="#fff" stroke="#ccc"/><rect x="290" y="182" width="56" height="24" rx="4" fill="#fff" stroke="#ccc"/>
-    <rect x="366" y="170" width="74" height="24" rx="4" fill="#fff" stroke="#ccc"/><rect x="452" y="178" width="52" height="24" rx="4" fill="#fff" stroke="#ccc"/>
-    <rect x="60" y="228" width="66" height="24" rx="4" fill="#fff" stroke="#ccc"/><rect x="148" y="238" width="54" height="24" rx="4" fill="#fff" stroke="#ccc"/>
-    <rect x="222" y="224" width="78" height="24" rx="4" fill="#fff" stroke="#ccc"/><rect x="318" y="236" width="58" height="24" rx="4" fill="#fff" stroke="#ccc"/>
-    <rect x="394" y="226" width="64" height="24" rx="4" fill="#fff" stroke="#ccc"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 320" role="img" aria-label="Cluttered traditional process diagram">
+  <defs>
+    <marker id="before-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0 0, 6 3, 0 6" fill="#c9a0a0"/>
+    </marker>
+  </defs>
+  <rect width="520" height="320" rx="12" fill="#faf5f5"/>
+  <rect x="16" y="16" width="488" height="32" rx="8" fill="#fff" stroke="#e8d0d0"/>
+  <text x="30" y="37" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#9b4545">Traditional AS-IS export</text>
+
+  <!-- Messy but connected boxes -->
+  <rect x="24" y="62" width="56" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="92" y="56" width="50" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="156" y="68" width="60" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="232" y="54" width="52" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="300" y="66" width="58" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="374" y="58" width="54" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="440" y="70" width="48" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+
+  <rect x="36" y="104" width="64" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="118" y="116" width="48" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="184" y="100" width="70" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="272" y="112" width="54" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="344" y="104" width="62" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="422" y="118" width="46" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+
+  <rect x="28" y="152" width="52" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="96" y="162" width="68" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="180" y="148" width="58" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="256" y="160" width="52" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="324" y="150" width="66" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="406" y="156" width="50" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+
+  <rect x="48" y="200" width="60" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="128" y="208" width="50" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="198" y="196" width="72" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="286" y="206" width="54" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+  <rect x="356" y="198" width="60" height="22" rx="4" fill="#fff" stroke="#ccc"/>
+
+  <!-- Lines connecting box edges (chaotic but attached) -->
+  <g fill="none" stroke="#d4a0a0" stroke-width="1.3" marker-end="url(#before-arrow)" opacity="0.85">
+    <line x1="80" y1="73" x2="92" y2="67"/>
+    <line x1="142" y1="67" x2="156" y2="73"/>
+    <line x1="216" y1="79" x2="232" y2="65"/>
+    <line x1="284" y1="65" x2="300" y2="73"/>
+    <line x1="358" y1="69" x2="374" y2="69"/>
+    <line x1="428" y1="69" x2="440" y2="81"/>
+    <line x1="68" y1="84" x2="68" y2="104"/>
+    <line x1="100" y1="126" x2="118" y2="127"/>
+    <line x1="166" y1="127" x2="184" y2="111"/>
+    <line x1="254" y1="111" x2="272" y2="123"/>
+    <line x1="326" y1="115" x2="344" y2="115"/>
+    <line x1="406" y1="115" x2="422" y2="129"/>
+    <line x1="80" y1="174" x2="96" y2="173"/>
+    <line x1="164" y1="173" x2="180" y2="159"/>
+    <line x1="238" y1="159" x2="256" y2="171"/>
+    <line x1="308" y1="171" x2="324" y2="161"/>
+    <line x1="390" y1="167" x2="406" y2="167"/>
+    <line x1="108" y1="218" x2="128" y2="219"/>
+    <line x1="178" y1="219" x2="198" y2="207"/>
+    <line x1="270" y1="207" x2="286" y2="217"/>
+    <line x1="340" y1="209" x2="356" y2="209"/>
   </g>
-  <g stroke="#d8b4b4" stroke-width="1.2" fill="none" opacity="0.8">
-    <path d="M90,84 L130,118 M152,76 L198,124 M236,72 L286,126 M360,86 L400,128"/>
-    <path d="M98,142 L156,184 M184,124 L236,168 M356,128 L410,178 M420,172 L468,236"/>
-    <path d="M128,196 L220,236 M290,194 L360,236"/>
-  </g>
-  <text x="28" y="310" font-family="system-ui, sans-serif" font-size="12" fill="#8a5a5a">Workshop notes → one static diagram → hard to update</text>
+
+  <text x="24" y="268" font-family="system-ui, sans-serif" font-size="11" fill="#8a5a5a">Workshop notes → one static diagram → hard to update</text>
 </svg>
 SVG;
 }
@@ -82,29 +139,45 @@ SVG;
 function landing_illustration_after(): string
 {
     return <<<'SVG'
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 340" role="img" aria-label="Structured editable process map">
-  <rect width="520" height="340" rx="12" fill="#f2f8f5"/>
-  <rect x="20" y="20" width="480" height="36" rx="8" fill="#fff" stroke="#b8d9c8"/>
-  <text x="36" y="43" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#2a6e55">AS-IS Management</text>
-  <rect x="24" y="68" width="472" height="62" rx="8" fill="#e8f5e9" stroke="#9cc9a5" stroke-width="1.2"/>
-  <text x="40" y="90" font-family="Georgia, serif" font-size="13" fill="#2f5c3a">Swimlane · Customer First</text>
-  <rect x="40" y="98" width="78" height="22" rx="5" fill="#fff" stroke="#7cb587"/><rect x="132" y="98" width="96" height="22" rx="5" fill="#fff" stroke="#7cb587"/>
-  <rect x="242" y="98" width="84" height="22" rx="5" fill="#fff" stroke="#7cb587"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 320" role="img" aria-label="Structured editable process map">
+  <defs>
+    <marker id="after-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+      <polygon points="0 0, 7 3.5, 0 7" fill="#1a7a96"/>
+    </marker>
+  </defs>
+  <rect width="520" height="320" rx="12" fill="#f2f8f5"/>
+  <rect x="16" y="16" width="488" height="32" rx="8" fill="#fff" stroke="#b8d9c8"/>
+  <text x="30" y="37" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#2a6e55">AS-IS Management</text>
 
-  <rect x="24" y="142" width="472" height="88" rx="8" fill="#fff8e1" stroke="#e0c878" stroke-width="1.2"/>
-  <text x="40" y="164" font-family="Georgia, serif" font-size="13" fill="#6b5620">Swimlane · Approver</text>
-  <rect x="40" y="172" width="88" height="22" rx="5" fill="#fff" stroke="#d4a72c"/><rect x="144" y="172" width="104" height="22" rx="5" fill="#fff" stroke="#d4a72c"/>
-  <polygon points="270,183 286,173 286,193" fill="#fff" stroke="#d4a72c"/><rect x="300" y="172" width="80" height="22" rx="5" fill="#fff" stroke="#d4a72c"/>
+  <rect x="20" y="60" width="480" height="58" rx="8" fill="#e8f5e9" stroke="#9cc9a5" stroke-width="1.2"/>
+  <text x="34" y="80" font-family="Georgia, serif" font-size="12" fill="#2f5c3a">Customer First</text>
+  <rect x="34" y="88" width="72" height="22" rx="5" fill="#fff" stroke="#7cb587"/>
+  <rect x="124" y="88" width="88" height="22" rx="5" fill="#fff" stroke="#7cb587"/>
+  <rect x="230" y="88" width="80" height="22" rx="5" fill="#fff" stroke="#7cb587"/>
 
-  <rect x="24" y="242" width="472" height="62" rx="8" fill="#e3f2fd" stroke="#9ec0de" stroke-width="1.2"/>
-  <text x="40" y="264" font-family="Georgia, serif" font-size="13" fill="#2a4f6e">Swimlane · Finance</text>
-  <rect x="40" y="272" width="92" height="22" rx="5" fill="#fff" stroke="#7aaed4"/><rect x="148" y="272" width="100" height="22" rx="5" fill="#fff" stroke="#7aaed4"/>
+  <rect x="20" y="128" width="480" height="72" rx="8" fill="#fff8e1" stroke="#e0c878" stroke-width="1.2"/>
+  <text x="34" y="148" font-family="Georgia, serif" font-size="12" fill="#6b5620">Approver</text>
+  <rect x="34" y="156" width="80" height="22" rx="5" fill="#fff" stroke="#d4a72c"/>
+  <rect x="134" y="156" width="96" height="22" rx="5" fill="#fff" stroke="#d4a72c"/>
+  <polygon points="252,167 266,156 266,178 252,178" fill="#fff" stroke="#d4a72c"/>
+  <rect x="278" y="156" width="76" height="22" rx="5" fill="#fff" stroke="#d4a72c"/>
 
-  <line x1="118" y1="109" x2="130" y2="109" stroke="#1a7a96" stroke-width="2"/>
-  <line x1="228" y1="109" x2="240" y2="109" stroke="#1a7a96" stroke-width="2"/>
-  <line x1="128" y1="183" x2="142" y2="183" stroke="#1a7a96" stroke-width="2"/>
-  <text x="360" y="280" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#2a6e55">↻ Live diagram</text>
-  <text x="28" y="322" font-family="system-ui, sans-serif" font-size="12" fill="#5a7a6a">Editable lanes, steps, systems &amp; connections</text>
+  <rect x="20" y="212" width="480" height="58" rx="8" fill="#e3f2fd" stroke="#9ec0de" stroke-width="1.2"/>
+  <text x="34" y="232" font-family="Georgia, serif" font-size="12" fill="#2a4f6e">Finance</text>
+  <rect x="34" y="240" width="84" height="22" rx="5" fill="#fff" stroke="#7aaed4"/>
+  <rect x="138" y="240" width="92" height="22" rx="5" fill="#fff" stroke="#7aaed4"/>
+
+  <g fill="none" stroke="#1a7a96" stroke-width="2" marker-end="url(#after-arrow)">
+    <line x1="106" y1="99" x2="124" y2="99"/>
+    <line x1="212" y1="99" x2="230" y2="99"/>
+    <line x1="114" y1="167" x2="134" y2="167"/>
+    <line x1="230" y1="167" x2="252" y2="167"/>
+    <line x1="266" y1="167" x2="278" y2="167"/>
+    <path d="M 190 178 L 190 200 L 80 200 L 80 240"/>
+  </g>
+
+  <text x="340" y="252" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#2a6e55">↻ Live diagram</text>
+  <text x="24" y="296" font-family="system-ui, sans-serif" font-size="11" fill="#5a7a6a">Editable lanes, steps, systems &amp; connections</text>
 </svg>
 SVG;
 }

@@ -13,9 +13,9 @@ ob_start();
             <p class="landing-eyebrow">AS-IS process mapping</p>
             <h1 class="landing-title">Capture how work really happens — then make it clear</h1>
             <p class="landing-lead">
-                When staff are interviewed or teams come together, the result is often a dense diagram
-                that is hard to read and harder to maintain. This site turns that captured knowledge
-                into structured, editable process maps anyone can follow.
+                An AS-IS should show how work really flows — the people, the systems, and what happens next.
+                Instead of a dense diagram that is hard to read and update, this site gives you structured,
+                editable process maps anyone can follow.
             </p>
             <div class="landing-hero-actions">
                 <a class="btn btn-lg" href="/documents.php">Open your process maps</a>
