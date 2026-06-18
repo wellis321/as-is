@@ -1229,8 +1229,50 @@ function render_layout(string $title, string $content, array $options = []): voi
             align-items: start;
         }
 
+        .help-step-types-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+        }
+
+        .help-action-types-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem 2.5rem;
+        }
+
+        .help-action-types-item {
+            display: flex;
+            gap: 0.625rem;
+            align-items: flex-start;
+        }
+
+        .help-action-types-item .hat-icon {
+            font-size: 1.05rem;
+            flex-shrink: 0;
+            margin-top: 0.075rem;
+        }
+
+        .help-action-types-item strong {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.1rem;
+        }
+
+        .help-action-types-item p {
+            margin: 0;
+            font-size: 0.8125rem;
+            color: var(--muted);
+        }
+
+        @media (max-width: 960px) {
+            .help-step-types-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
         @media (max-width: 768px) {
             .help-ref-grid { grid-template-columns: 1fr; }
+            .help-action-types-grid { grid-template-columns: 1fr; }
         }
 
         .danger-zone {

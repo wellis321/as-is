@@ -59,70 +59,63 @@ ob_start();
     </div>
 </div>
 
-<!-- ── Two-column reference cards ───────────────────────────────── -->
-<div class="help-ref-grid">
-
-    <!-- Step types -->
-    <div class="card">
-        <h2>Step types</h2>
-        <p>Step type controls how the step appears in the diagram.</p>
-        <table>
-            <tbody>
-                <tr>
-                    <td style="width:100px;"><span class="badge badge-start">Start</span></td>
-                    <td>The first step in the process — where it begins.</td>
-                </tr>
-                <tr>
-                    <td><span class="badge badge-task">Task</span></td>
-                    <td>A regular action performed by someone in the lane. This is the default.</td>
-                </tr>
-                <tr>
-                    <td><span class="badge badge-decision">Decision</span></td>
-                    <td>A yes/no or branching point. Give the outgoing connections labels like "Yes" and "No".</td>
-                </tr>
-                <tr>
-                    <td><span class="badge badge-end">End</span></td>
-                    <td style="border-bottom:none;">The final step — where the process concludes.</td>
-                </tr>
-            </tbody>
-        </table>
+<!-- ── Step types ────────────────────────────────────────────────── -->
+<div class="card">
+    <h2>Step types</h2>
+    <p>Step type controls how the step appears in the diagram.</p>
+    <div class="help-step-types-grid">
+        <div>
+            <div style="margin-bottom:0.5rem;"><span class="badge badge-start">Start</span></div>
+            <p style="margin:0;font-size:0.875rem;">The first step in the process — where it begins.</p>
+        </div>
+        <div>
+            <div style="margin-bottom:0.5rem;"><span class="badge badge-task">Task</span></div>
+            <p style="margin:0;font-size:0.875rem;">A regular action performed by someone in the lane. This is the default.</p>
+        </div>
+        <div>
+            <div style="margin-bottom:0.5rem;"><span class="badge badge-decision">Decision</span></div>
+            <p style="margin:0;font-size:0.875rem;">A yes/no or branching point. Give outgoing connections labels like "Yes" and "No".</p>
+        </div>
+        <div>
+            <div style="margin-bottom:0.5rem;"><span class="badge badge-end">End</span></div>
+            <p style="margin:0;font-size:0.875rem;">The final step — where the process concludes.</p>
+        </div>
     </div>
+</div>
 
-    <!-- Action types -->
-    <div class="card">
-        <h2>Action types</h2>
-        <p>Action type adds a small icon to the step card to show <em>what kind</em> of action it is at a glance.</p>
-        <table>
-            <tbody>
-                <?php
-                $icons = [
-                    ['phone',        'Phone call',          'Someone makes or receives a telephone call.'],
-                    ['email',        'Email',               'A formal email is sent or received.'],
-                    ['letter',       'Letter / post',       'A formal letter or document is sent by post — statutory notices, formal correspondence.'],
-                    ['notification', 'Notification / alert','An automated alert, text message, or system notification is triggered.'],
-                    ['document',     'Document',            'A form, record, or document is created, completed, or used.'],
-                    ['data-entry',   'Data entry',          'A person enters information into a system.'],
-                    ['automated',    'Automated / system',  'The system performs this step automatically — no human action required.'],
-                    ['api-call',     'API call',            'One system makes a programmatic call to another — a system-to-system integration point, often where delays or failures occur.'],
-                    ['report',       'Report / record',     'A formal report or output record is produced at the end of a process step.'],
-                    ['check',        'Check / review',      'Something is checked, verified, or quality-reviewed.'],
-                    ['meeting',      'Meeting / approval',  'A discussion, sign-off, or formal approval is required.'],
-                    ['payment',      'Payment',             'A financial transaction takes place — raising an invoice, processing payment, or issuing a refund.'],
-                    ['visit',        'Visit / inspection',  'Someone travels to a physical location to carry out work, a survey, or an inspection.'],
-                    ['wait',         'Wait / hold',         'The process pauses — waiting for a response, a date, or an action from elsewhere.'],
-                    ['escalation',   'Escalation',          'The task or decision is passed to a more senior person or team.'],
-                ];
-                $last = end($icons)[0];
-                foreach ($icons as [$type, $label, $desc]):
-                ?>
-                    <tr>
-                        <td style="width:36px;text-align:center;font-size:1.1rem;"><?= action_type_icon($type) ?></td>
-                        <td style="white-space:nowrap;font-weight:600;"><?= h($label) ?></td>
-                        <td style="font-size:0.85rem;color:var(--muted);<?= $type === $last ? 'border-bottom:none;' : '' ?>"><?= h($desc) ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+<!-- ── Action types ──────────────────────────────────────────────── -->
+<div class="card">
+    <h2>Action types</h2>
+    <p>Action type adds a small icon to the step card to show <em>what kind</em> of action it is at a glance.</p>
+    <div class="help-action-types-grid">
+        <?php
+        $icons = [
+            ['phone',        'Phone call',          'Someone makes or receives a telephone call.'],
+            ['email',        'Email',               'A formal email is sent or received.'],
+            ['letter',       'Letter / post',       'A formal letter or document is sent by post — statutory notices, formal correspondence.'],
+            ['notification', 'Notification / alert','An automated alert, text message, or system notification is triggered.'],
+            ['document',     'Document',            'A form, record, or document is created, completed, or used.'],
+            ['data-entry',   'Data entry',          'A person enters information into a system.'],
+            ['automated',    'Automated / system',  'The system performs this step automatically — no human action required.'],
+            ['api-call',     'API call',            'One system makes a programmatic call to another — a system-to-system integration point.'],
+            ['report',       'Report / record',     'A formal report or output record is produced at the end of a process step.'],
+            ['check',        'Check / review',      'Something is checked, verified, or quality-reviewed.'],
+            ['meeting',      'Meeting / approval',  'A discussion, sign-off, or formal approval is required.'],
+            ['payment',      'Payment',             'A financial transaction takes place — raising an invoice, processing payment, or issuing a refund.'],
+            ['visit',        'Visit / inspection',  'Someone travels to a physical location to carry out work, a survey, or an inspection.'],
+            ['wait',         'Wait / hold',         'The process pauses — waiting for a response, a date, or an action from elsewhere.'],
+            ['escalation',   'Escalation',          'The task or decision is passed to a more senior person or team.'],
+        ];
+        foreach ($icons as [$type, $label, $desc]):
+        ?>
+            <div class="help-action-types-item">
+                <span class="hat-icon"><?= action_type_icon($type) ?></span>
+                <div>
+                    <strong><?= h($label) ?></strong>
+                    <p><?= h($desc) ?></p>
+                </div>
+            </div>
+        <?php endforeach; ?>
     </div>
 </div>
 
