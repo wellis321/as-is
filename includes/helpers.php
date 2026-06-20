@@ -2014,8 +2014,7 @@ function render_layout(string $title, string $content, array $options = []): voi
         /* ── Diagram viewer ──────────────────────────────────── */
         .diagram-wrap {
             overflow: auto;
-            max-height: 80vh;
-            min-height: 380px;
+            /* height is set by JS to match the SVG exactly — page provides scrolling */
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--r-lg);

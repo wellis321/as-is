@@ -987,9 +987,16 @@ let zoom = 1;
 
 function applyZoom(z) {
     zoom = Math.max(0.1, Math.min(6, z));
-    svg.setAttribute('width',  Math.round(naturalW * zoom));
-    svg.setAttribute('height', Math.round(naturalH * zoom));
+    const svgW = Math.round(naturalW * zoom);
+    const svgH = Math.round(naturalH * zoom);
+    svg.setAttribute('width',  svgW);
+    svg.setAttribute('height', svgH);
     if (label) label.textContent = Math.round(zoom * 100) + '%';
+    // Size the wrap to exactly the SVG so the page scroll bar is used, not the container's
+    if (wrap && !document.fullscreenElement) {
+        wrap.style.height = svgH + 'px';
+        wrap.style.width  = '100%'; // always fill the card width
+    }
 }
 
 function fitToWrap() {
@@ -1049,8 +1056,13 @@ function fitToScreen() {
 document.addEventListener('fullscreenchange', () => {
     requestAnimationFrame(() => {
         const inFull = !!document.fullscreenElement;
-        if (inFull) fitToScreen();
-        else fitToWrap();
+        if (inFull) {
+            // In fullscreen the CSS sets height:100vh; clear the JS-set height first
+            if (wrap) wrap.style.height = '';
+            fitToScreen();
+        } else {
+            fitToWrap(); // restores JS-controlled height via applyZoom
+        }
         // Update toolbar button label
         const btnFull = document.getElementById('btnFull');
         if (btnFull) btnFull.textContent = inFull ? 'Exit full screen' : 'Full screen';
