@@ -144,12 +144,20 @@ ob_start();
             <div>
                 <label for="step_type">Step type</label>
                 <select id="step_type" name="step_type">
-                    <option value="start"    <?= $stepType === 'start'    ? 'selected' : '' ?>>Start</option>
-                    <option value="task"     <?= $stepType === 'task'     ? 'selected' : '' ?>>Task</option>
-                    <option value="decision" <?= $stepType === 'decision' ? 'selected' : '' ?>>Decision</option>
-                    <option value="end"      <?= $stepType === 'end'      ? 'selected' : '' ?>>End</option>
+                    <option value="start"      <?= $stepType === 'start'      ? 'selected' : '' ?>>Start</option>
+                    <option value="task"       <?= $stepType === 'task'       ? 'selected' : '' ?>>Task</option>
+                    <option value="decision"   <?= $stepType === 'decision'   ? 'selected' : '' ?>>Decision</option>
+                    <option value="subprocess" <?= $stepType === 'subprocess' ? 'selected' : '' ?>>Subprocess</option>
+                    <option value="parallel"   <?= $stepType === 'parallel'   ? 'selected' : '' ?>>Parallel gateway</option>
+                    <option value="end"        <?= $stepType === 'end'        ? 'selected' : '' ?>>End</option>
                 </select>
-                <p class="field-help"><em>Start</em> and <em>End</em> mark where the process begins and ends. <em>Decision</em> for branching points (Yes / No). <em>Task</em> for everything else.</p>
+                <p class="field-help">
+                    <em>Start</em> / <em>End</em> mark where the process begins and ends.
+                    <em>Decision</em> for Yes/No branches.
+                    <em>Subprocess</em> for a step that expands into its own detailed process map.
+                    <em>Parallel gateway</em> where multiple things happen simultaneously (not a choice — all paths run).
+                    <em>Task</em> for everything else.
+                </p>
             </div>
             <div>
                 <label for="action_type">Action type</label>

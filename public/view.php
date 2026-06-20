@@ -327,10 +327,12 @@ function renderSwimlane(data, canvasEl) {
         report:        { fill:'#fef3c7', stroke:'#92400e', text:'#451a03' },
         general:       { fill:'#f8fafc', stroke:'#cbd5e1', text:'#374151' },
     };
-    // Start/End always use distinctive colours regardless of action type
+    // These step types use fixed colours regardless of action type
     const TYPE_OVERRIDE = {
-        start: { fill:'#dcfce7', stroke:'#16a34a', text:'#14532d' },
-        end:   { fill:'#fef2f2', stroke:'#dc2626', text:'#991b1b' },
+        start:      { fill:'#dcfce7', stroke:'#16a34a', text:'#14532d' },
+        end:        { fill:'#fef2f2', stroke:'#dc2626', text:'#991b1b' },
+        subprocess: { fill:'#eff6ff', stroke:'#2563eb', text:'#1e3a8a' },
+        parallel:   { fill:'#fdf4ff', stroke:'#9333ea', text:'#581c87' },
     };
     // ACTION_ICON_NODES — hardcoded path arrays, defined below renderSwimlane.
 
@@ -578,21 +580,39 @@ function renderSwimlane(data, canvasEl) {
         g.appendChild(tip);
 
         // Node shape
-        if (step.step_type === 'decision') {
+        if (step.step_type === 'decision' || step.step_type === 'parallel') {
             g.appendChild(el('polygon', {
                 points: `${cx},${y} ${x+NODE_W},${cy} ${cx},${y+NODE_H} ${x},${cy}`,
                 fill: col.fill, stroke: col.stroke, 'stroke-width': 1.5,
             }));
+            // Parallel gateway: + symbol inside the diamond
+            if (step.step_type === 'parallel') {
+                g.appendChild(txt(cx, cy + 1, '+', {
+                    'font-size': 20, 'font-weight': 700,
+                    fill: col.stroke, opacity: 0.75,
+                }));
+            }
         } else if (step.step_type === 'start' || step.step_type === 'end') {
             g.appendChild(el('rect', { x, y, width:NODE_W, height:NODE_H, rx:NODE_H/2,
                 fill:col.fill, stroke:col.stroke, 'stroke-width':2 }));
         } else {
             g.appendChild(el('rect', { x, y, width:NODE_W, height:NODE_H, rx:7,
                 fill:col.fill, stroke:col.stroke, 'stroke-width':1.5 }));
+            // Subprocess: small ⊕ badge at bottom-centre (conventional notation)
+            if (step.step_type === 'subprocess') {
+                const bw = 18, bh = 14;
+                g.appendChild(el('rect', {
+                    x: cx - bw / 2, y: y + NODE_H - bh - 3,
+                    width: bw, height: bh, rx: 3,
+                    fill: 'white', stroke: col.stroke, 'stroke-width': 1.2,
+                }));
+                g.appendChild(txt(cx, y + NODE_H - 3 - bh / 2, '+', {
+                    'font-size': 11, 'font-weight': 700, fill: col.stroke,
+                }));
+            }
         }
 
-        // Step number badge — centred for pill nodes (large rx cuts off the corner),
-        // top-left for rectangles and diamonds.
+        // Step number badge — centred for pill nodes, top-left for rectangles and diamonds.
         const isPill = step.step_type === 'start' || step.step_type === 'end';
         const badgeX = isPill ? cx - 11 : x + 5;
         const badgeTX = isPill ? cx      : x + 16;
@@ -625,9 +645,9 @@ function renderSwimlane(data, canvasEl) {
             }));
         });
 
-        // Action icon — Lucide icon drawn from node data using el() (task nodes only)
+        // Action icon — shown on task and subprocess nodes
         const iconDs = ACTION_ICON_NODES[step.action_type];
-        if (iconDs && step.step_type === 'task') {
+        if (iconDs && (step.step_type === 'task' || step.step_type === 'subprocess')) {
             const iconPx = 14, scale = iconPx / 24;
             const ig = el('g', {
                 transform: `translate(${x + NODE_W - iconPx - 5},${y + NODE_H - iconPx - 5}) scale(${scale.toFixed(5)})`,
@@ -911,9 +931,29 @@ function fitToWrap() {
 document.getElementById('btnZoomIn') ?.addEventListener('click', () => applyZoom(zoom * 1.25));
 document.getElementById('btnZoomOut')?.addEventListener('click', () => applyZoom(zoom * 0.8));
 document.getElementById('btnFit')    ?.addEventListener('click', fitToWrap);
-document.getElementById('btnFull')   ?.addEventListener('click', () => {
+document.getElementById('btnFull')?.addEventListener('click', () => {
     if (!document.fullscreenElement) wrap?.requestFullscreen?.();
     else document.exitFullscreen?.();
+});
+
+// Re-fit the SVG whenever fullscreen state changes so the diagram fills the screen.
+function fitToScreen() {
+    if (!wrap) return;
+    // In fullscreen we fit to both dimensions (no 100% cap — SVG scales crisply).
+    const pad  = 32;
+    const zoomW = (wrap.clientWidth  - pad) / naturalW;
+    const zoomH = (wrap.clientHeight - pad) / naturalH;
+    applyZoom(Math.min(zoomW, zoomH));
+    wrap.scrollLeft = 0;
+    wrap.scrollTop  = 0;
+}
+
+document.addEventListener('fullscreenchange', () => {
+    // Wait one frame so the browser has applied the new viewport dimensions.
+    requestAnimationFrame(() => {
+        if (document.fullscreenElement) fitToScreen();
+        else fitToWrap();
+    });
 });
 
 // Wheel events inside the detail panel should scroll the card list, not zoom.

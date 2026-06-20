@@ -44,7 +44,7 @@ ob_start();
             ['3', 'Add systems &amp; tools', 'List the software systems or tools used in this process (e.g. Liberty Converse, NEC, DRS). You can then attach them to individual steps so it is clear which system each action takes place in.'],
             ['4', 'Add steps', 'Each step is one action in the process. Give it a step number (use the same numbering as your source diagram if you have one), choose which swimlane it belongs to, give it a title, and pick a <strong>step type</strong> and an <strong>action type</strong>. Tick any systems used at that step.'],
             ['5', 'Add connections', 'Connections are the flow arrows between steps — they are what makes the diagram meaningful. In the <em>Connections</em> section on the Edit page, pick a From step and a To step, add an optional label (e.g. "Yes", "No", "New job"), and click Add connection.'],
-            ['6', 'View &amp; share', 'Click <strong>View</strong> to see the horizontal swimlane map and the auto-generated flow diagram. Use the <strong>Print</strong> button to get a clean printable version.'],
+            ['6', 'View &amp; share', 'Click <strong>View</strong> to open the interactive swimlane diagram. Scroll to zoom, drag to pan, and click any step to explore its connections. Use the <strong>Print</strong> button for a clean printable version.'],
         ];
         foreach ($quickSteps as [$num, $stepTitle, $body]):
         ?>
@@ -66,19 +66,27 @@ ob_start();
     <div class="help-step-types-grid">
         <div>
             <div style="margin-bottom:0.5rem;"><span class="badge badge-start">Start</span></div>
-            <p style="margin:0;font-size:0.875rem;">The first step in the process — where it begins.</p>
+            <p style="margin:0;font-size:0.875rem;">The first step in the process — where it begins. Shown as a pill shape with a green border.</p>
         </div>
         <div>
             <div style="margin-bottom:0.5rem;"><span class="badge badge-task">Task</span></div>
-            <p style="margin:0;font-size:0.875rem;">A regular action performed by someone in the lane. This is the default.</p>
+            <p style="margin:0;font-size:0.875rem;">A regular action performed by someone in the lane. The default for most steps.</p>
         </div>
         <div>
             <div style="margin-bottom:0.5rem;"><span class="badge badge-decision">Decision</span></div>
-            <p style="margin:0;font-size:0.875rem;">A yes/no or branching point. Give outgoing connections labels like "Yes" and "No".</p>
+            <p style="margin:0;font-size:0.875rem;">A branching point — one path or another is taken. Give outgoing connections labels like "Yes" and "No".</p>
+        </div>
+        <div>
+            <div style="margin-bottom:0.5rem;"><span class="badge" style="background:#eff6ff;color:#1e3a8a;border-color:#2563eb;">Subprocess</span></div>
+            <p style="margin:0;font-size:0.875rem;">A step that represents a whole separate process. Shown as a rectangle with a small <strong>+</strong> badge — indicating there is more detail to explore. Use this when a single step is itself too complex to show in-line.</p>
+        </div>
+        <div>
+            <div style="margin-bottom:0.5rem;"><span class="badge" style="background:#fdf4ff;color:#581c87;border-color:#9333ea;">Parallel gateway</span></div>
+            <p style="margin:0;font-size:0.875rem;">Multiple things happen <em>simultaneously</em> — all outgoing paths run at the same time, not one-or-the-other. Shown as a diamond with a <strong>+</strong> inside. Use this for automated system actions running in parallel with human steps.</p>
         </div>
         <div>
             <div style="margin-bottom:0.5rem;"><span class="badge badge-end">End</span></div>
-            <p style="margin:0;font-size:0.875rem;">The final step — where the process concludes.</p>
+            <p style="margin:0;font-size:0.875rem;">The final step — where the process concludes. Shown as a pill shape with a red border.</p>
         </div>
     </div>
 </div>
@@ -147,6 +155,75 @@ ob_start();
     </div>
 </div>
 
+<!-- ── Reading the diagram ────────────────────────────────────────── -->
+<div class="card">
+    <h2>Reading and exploring the diagram</h2>
+    <p>
+        The process map viewer is interactive — it is designed to be explored, not just read top-to-bottom.
+        Here is what you can do on any diagram.
+    </p>
+
+    <h3 style="margin:1.25rem 0 0.5rem;font-size:1rem;">Navigating the map</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div>
+            <strong>Scroll to zoom</strong>
+            <p style="margin:0.2rem 0 0;font-size:0.875rem;">Use your mouse wheel or trackpad scroll to zoom in and out, centred on the cursor position.</p>
+        </div>
+        <div>
+            <strong>Drag to pan</strong>
+            <p style="margin:0.2rem 0 0;font-size:0.875rem;">Click and drag anywhere on the diagram background to move around a large map.</p>
+        </div>
+        <div>
+            <strong>Fit button</strong>
+            <p style="margin:0.2rem 0 0;font-size:0.875rem;">Click <strong>Fit</strong> to reset the view so the whole diagram fits in the available space.</p>
+        </div>
+        <div>
+            <strong>Full screen</strong>
+            <p style="margin:0.2rem 0 0;font-size:0.875rem;">Click <strong>Full screen</strong> to expand the diagram to fill your entire screen — useful for workshops and walkthroughs.</p>
+        </div>
+    </div>
+
+    <h3 style="margin:1.5rem 0 0.5rem;font-size:1rem;">Multi-row layout</h3>
+    <p style="margin:0 0 0.5rem;">
+        Steps within each swimlane wrap into multiple rows when there are more than seven steps in a lane.
+        This means even a 20-step process fits on screen without horizontal scrolling.
+        A subtle dashed line separates the rows within a lane.
+    </p>
+
+    <h3 style="margin:1.5rem 0 0.5rem;font-size:1rem;">Connection colours</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div style="display:flex;align-items:flex-start;gap:0.6rem;">
+            <span style="display:inline-block;width:28px;height:3px;background:#64748b;flex-shrink:0;margin-top:0.55rem;"></span>
+            <div><strong>Grey arrow</strong><p style="margin:0.15rem 0 0;font-size:0.875rem;">Flow within the same swimlane — one step follows directly from another in the same team.</p></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:0.6rem;">
+            <span style="display:inline-block;width:28px;height:3px;background:#3b82f6;flex-shrink:0;margin-top:0.55rem;"></span>
+            <div><strong>Blue arrow</strong><p style="margin:0.15rem 0 0;font-size:0.875rem;">A cross-lane handoff — work passes from one team or role to another.</p></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:0.6rem;">
+            <span style="display:inline-block;width:28px;height:3px;background:#f59e0b;border-top:3px dashed #f59e0b;flex-shrink:0;margin-top:0.55rem;"></span>
+            <div><strong>Amber dashed arrow</strong><p style="margin:0.15rem 0 0;font-size:0.875rem;">A loop-back — the process returns to an earlier step, e.g. "if rejected, return to step 3".</p></div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:0.6rem;">
+            <span style="display:inline-block;width:28px;height:3px;background:#64748b;flex-shrink:0;margin-top:0.55rem;"></span>
+            <div><strong>L-shaped arrow</strong><p style="margin:0.15rem 0 0;font-size:0.875rem;">When the flow wraps to the next row within a lane, an L-shaped arrow traces the path along the right margin then down.</p></div>
+        </div>
+    </div>
+
+    <h3 style="margin:1.5rem 0 0.5rem;font-size:1rem;">Clicking a step to focus</h3>
+    <p style="margin:0 0 0.75rem;">
+        Click any step in the diagram to enter <strong>focus mode</strong>:
+    </p>
+    <ul style="margin:0;padding-left:1.25rem;display:grid;gap:0.4rem;font-size:0.9rem;">
+        <li>The clicked step and its immediate connections stay vivid.</li>
+        <li>Everything else fades to grey, making the local flow much easier to read.</li>
+        <li>A card panel appears showing the full description, action type, and linked systems for every step in focus.</li>
+        <li>The panel opens in the corner furthest from your click — if it still covers something, <strong>drag it by the header</strong> to move it anywhere on the diagram.</li>
+        <li>Scroll inside the card panel to read longer descriptions; this scrolls the list, not the diagram.</li>
+        <li>Click the same step again, press &times; on the panel, or click the diagram background to clear the focus and restore the full view.</li>
+    </ul>
+</div>
+
 <!-- ── Tips ──────────────────────────────────────────────────────── -->
 <div class="card">
     <h2>Useful tips</h2>
@@ -157,6 +234,9 @@ ob_start();
         <li>The flow diagram is only generated from connections you have added. If the diagram looks empty, go to the Edit page and add connections between steps.</li>
         <li>The <strong>Print</strong> button on the View page opens a clean, navigation-free version that your browser can print or save as PDF.</li>
         <li>Status <em>Draft</em> means work in progress; <em>Published</em> means it has been signed off and is the current agreed picture.</li>
+        <li>Use <strong>Click to focus</strong> during workshops — clicking a step centres the conversation on exactly what that step does and what comes before and after it.</li>
+        <li>If the step card panel is in the way after clicking, drag it by its header (the ⠿⠿ icon) to move it to a clear area of the diagram.</li>
+        <li>The <a href="/view.php?slug=sample-repair-quick">Housing Repair — Quick View</a> sample is the simplest example to try first — it shows focus mode, cross-lane handoffs, and the multi-row layout clearly.</li>
     </ul>
 </div>
 

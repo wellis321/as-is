@@ -227,6 +227,22 @@ function ensure_schema(PDO $pdo): void
     ensure_v2_columns($pdo);
     ensure_global_systems($pdo);
     ensure_system_metadata($pdo);
+    ensure_subprocess_types($pdo);
+}
+
+function ensure_subprocess_types(PDO $pdo): void
+{
+    $row = $pdo->query(
+        "SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'steps' AND COLUMN_NAME = 'step_type'"
+    )->fetch();
+    if ($row && str_contains((string) ($row['COLUMN_TYPE'] ?? ''), 'subprocess')) {
+        return;
+    }
+    $pdo->exec(
+        "ALTER TABLE steps MODIFY COLUMN step_type
+         ENUM('start','task','decision','end','subprocess','parallel') NOT NULL DEFAULT 'task'"
+    );
 }
 
 function ensure_v2_columns(PDO $pdo): void
@@ -728,7 +744,7 @@ function valid_status(string $status): string
 
 function valid_step_type(string $type): string
 {
-    return in_array($type, ['start', 'task', 'decision', 'end'], true) ? $type : 'task';
+    return in_array($type, ['start', 'task', 'decision', 'end', 'subprocess', 'parallel'], true) ? $type : 'task';
 }
 
 function valid_action_type(string $type): string
@@ -741,10 +757,12 @@ function valid_action_type(string $type): string
 function step_type_label(string $type): string
 {
     return match ($type) {
-        'start'    => 'Start',
-        'decision' => 'Decision',
-        'end'      => 'End',
-        default    => 'Task',
+        'start'      => 'Start',
+        'decision'   => 'Decision',
+        'end'        => 'End',
+        'subprocess' => 'Subprocess',
+        'parallel'   => 'Parallel',
+        default      => 'Task',
     };
 }
 
@@ -845,10 +863,12 @@ function build_mermaid(array $lanes, array $steps, array $connections): string
             }
             $label = $icon . $step['step_number'] . '. ' . str_replace(['"', "\n"], ["'", ' '], $step['title']);
 
-            if ($step['step_type'] === 'decision') {
+            if ($step['step_type'] === 'decision' || $step['step_type'] === 'parallel') {
                 $lines[] = '        ' . $nodeId . '{"' . $label . '"}';
             } elseif ($step['step_type'] === 'start' || $step['step_type'] === 'end') {
                 $lines[] = '        ' . $nodeId . '(("' . $label . '"))';
+            } elseif ($step['step_type'] === 'subprocess') {
+                $lines[] = '        ' . $nodeId . '[["' . $label . '"]]';
             } else {
                 $lines[] = '        ' . $nodeId . '["' . $label . '"]';
             }
@@ -1949,8 +1969,8 @@ function render_layout(string $title, string $content, array $options = []): voi
         .diagram-wrap:active { cursor: grabbing; }
         .diagram-wrap .diagram { display: inline-block; min-width: 100%; padding: 1.5rem 2rem; border: none; border-radius: 0; }
         .diagram-wrap svg { max-width: none !important; display: block; }
-        .diagram-wrap:-webkit-full-screen { background: white; max-height: 100vh; padding: 1rem; }
-        .diagram-wrap:fullscreen           { background: white; max-height: 100vh; padding: 1rem; }
+        .diagram-wrap:-webkit-full-screen { background: white; width: 100vw; height: 100vh; max-height: 100vh; padding: 1rem; overflow: auto; }
+        .diagram-wrap:fullscreen           { background: white; width: 100vw; height: 100vh; max-height: 100vh; padding: 1rem; overflow: auto; }
 
         .diagram-toolbar {
             display: flex;
@@ -2097,6 +2117,7 @@ function render_layout(string $title, string $content, array $options = []): voi
                 <a href="/documents.php"<?= $__nav('documents.php') ?>>Process maps</a>
                 <a href="/systems.php"<?= $__nav('systems.php') ?>>Systems</a>
                 <a href="/help.php"<?= $__nav('help.php') ?>>Guidance</a>
+                <a href="/dev.php"<?= $__nav('dev.php') ?>>Roadmap</a>
             </nav>
             <div class="site-nav-actions">
                 <?php if ($__loggedIn): ?>
@@ -2117,6 +2138,7 @@ function render_layout(string $title, string $content, array $options = []): voi
             <a href="/documents.php"<?= $__nav('documents.php') ?>>Process maps</a>
             <a href="/systems.php"<?= $__nav('systems.php') ?>>Systems</a>
             <a href="/help.php"<?= $__nav('help.php') ?>>Guidance</a>
+            <a href="/dev.php"<?= $__nav('dev.php') ?>>Roadmap</a>
             <?php if ($__loggedIn): ?>
                 <?php if (function_exists('is_microsoft_user') && !is_microsoft_user()): ?>
                     <a href="/profile/change-password.php" class="mobile-nav-signout">Password</a>
@@ -2163,6 +2185,81 @@ function render_layout(string $title, string $content, array $options = []): voi
             <a href="<?= h(APP_URL) ?>/" style="color:rgba(255,255,255,.75);text-decoration:none;padding:.15rem .45rem;border:1px solid rgba(255,255,255,.25);border-radius:3px;">AS-IS Process Mapping</a>
         </div>
     </footer>
+
+<!-- ── Feedback widget ──────────────────────────────────────────────────── -->
+<div id="feedback-toggle" title="Share feedback or report an issue"
+     style="position:fixed;bottom:1.25rem;right:1.25rem;z-index:900;
+            background:var(--accent);color:#fff;border:none;border-radius:999px;
+            padding:0.45rem 0.9rem 0.45rem 0.7rem;font-size:0.8rem;font-weight:600;
+            font-family:var(--f-sans);cursor:pointer;display:flex;align-items:center;gap:0.4rem;
+            box-shadow:0 2px 12px rgba(0,0,0,0.18);user-select:none;"
+     role="button" aria-haspopup="dialog" aria-expanded="false"
+     onclick="document.getElementById('feedback-panel').hidden=!document.getElementById('feedback-panel').hidden;this.setAttribute('aria-expanded',!document.getElementById('feedback-panel').hidden);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    Feedback
+</div>
+
+<div id="feedback-panel" hidden role="dialog" aria-label="Share feedback"
+     style="position:fixed;bottom:4rem;right:1.25rem;z-index:901;width:320px;
+            background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+            box-shadow:0 8px 32px rgba(0,0,0,0.16);padding:1.1rem 1.2rem;font-family:var(--f-sans);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+        <strong style="font-size:0.9rem;">Share feedback</strong>
+        <button onclick="document.getElementById('feedback-panel').hidden=true;
+                         document.getElementById('feedback-toggle').setAttribute('aria-expanded','false');"
+                style="background:none;border:none;cursor:pointer;font-size:1.2rem;
+                       color:var(--muted);padding:0;line-height:1;" aria-label="Close">&#215;</button>
+    </div>
+    <form id="feedback-form" onsubmit="submitFeedback(event)">
+        <input type="hidden" id="fb-page" name="page">
+        <div style="margin-bottom:0.6rem;">
+            <label for="fb-type" style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:0.25rem;">Type</label>
+            <select id="fb-type" name="type" style="width:100%;font-size:0.85rem;">
+                <option value="suggestion">Suggestion</option>
+                <option value="issue">Issue / bug</option>
+                <option value="question">Question</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+        <div style="margin-bottom:0.75rem;">
+            <label for="fb-message" style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:0.25rem;">Details</label>
+            <textarea id="fb-message" name="message" rows="4" required
+                      placeholder="Describe your feedback, suggestion or issue…"
+                      style="width:100%;font-size:0.85rem;resize:vertical;
+                             border:1px solid var(--border);border-radius:var(--r);padding:0.45rem 0.6rem;
+                             font-family:var(--f-sans);box-sizing:border-box;"></textarea>
+        </div>
+        <button type="submit" class="btn btn-sm" style="width:100%;">Send feedback</button>
+        <p id="fb-thanks" hidden style="margin:0.5rem 0 0;font-size:0.8rem;color:var(--success);text-align:center;">
+            ✓ Thank you — feedback received.
+        </p>
+    </form>
+</div>
+
+<script>
+document.getElementById('fb-page').value = window.location.pathname + window.location.search;
+
+function submitFeedback(e) {
+    e.preventDefault();
+    const form = document.getElementById('feedback-form');
+    const data = new FormData(form);
+    fetch('/feedback.php', { method: 'POST', body: data })
+        .then(() => {
+            form.reset();
+            document.getElementById('fb-page').value = window.location.pathname + window.location.search;
+            document.getElementById('fb-thanks').hidden = false;
+            setTimeout(() => {
+                document.getElementById('feedback-panel').hidden = true;
+                document.getElementById('fb-thanks').hidden = true;
+                document.getElementById('feedback-toggle').setAttribute('aria-expanded', 'false');
+            }, 2200);
+        })
+        .catch(() => alert('Could not send — please try again.'));
+}
+</script>
 </body>
 </html>
     <?php
