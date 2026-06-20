@@ -1076,7 +1076,7 @@ function render_layout(string $title, string $content, array $options = []): voi
             gap: 0.1rem;
             flex: 1;
         }
-        .site-nav a {
+        .site-nav > a {
             display: block;
             padding: 0.45rem 0.7rem;
             font-size: 0.875rem;
@@ -1087,8 +1087,36 @@ function render_layout(string $title, string $content, array $options = []): voi
             white-space: nowrap;
             text-decoration: none;
         }
-        .site-nav a:hover { background: rgba(255,255,255,0.12); color: #fff; text-decoration: none; }
-        .site-nav a[aria-current="page"] { background: #008062; color: #fff; font-weight: 600; }
+        .site-nav > a:hover { background: rgba(255,255,255,0.12); color: #fff; text-decoration: none; }
+        .site-nav > a[aria-current="page"] { background: #008062; color: #fff; font-weight: 600; }
+
+        /* Nav group dropdown */
+        .nav-group { position: relative; }
+        .nav-group-btn {
+            display: flex; align-items: center; gap: 0.3rem;
+            padding: 0.45rem 0.7rem; font-size: 0.875rem; font-weight: 500;
+            color: rgba(255,255,255,0.85); border-radius: 4px;
+            background: none; border: none; cursor: pointer;
+            font-family: var(--f-sans); white-space: nowrap; transition: background 120ms, color 120ms;
+        }
+        .nav-group-btn:hover,
+        .nav-group-btn.open { background: rgba(255,255,255,0.12); color: #fff; }
+        .nav-group-btn svg { opacity: 0.7; }
+        .nav-group-menu {
+            position: absolute; left: 0; top: calc(100% + 6px);
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--r-lg); box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+            min-width: 160px; z-index: 500; overflow: hidden;
+        }
+        .nav-group-menu a {
+            display: flex; align-items: center; gap: 0.55rem;
+            padding: 0.6rem 0.9rem; font-size: 0.82rem; color: var(--text);
+            text-decoration: none; border-bottom: 1px solid var(--border);
+        }
+        .nav-group-menu a:last-child { border-bottom: none; }
+        .nav-group-menu a:hover { background: var(--bg); }
+        .nav-group-menu a svg { color: var(--muted); }
+        .nav-group-menu a[aria-current="page"] { background: var(--bg); font-weight: 600; color: var(--accent); }
 
         .site-nav-actions {
             display: flex;
@@ -2138,10 +2166,6 @@ function render_layout(string $title, string $content, array $options = []): voi
                                 Change password
                             </a>
                         <?php endif; ?>
-                        <a href="/security.php">
-                            <i data-lucide="shield-check" style="width:13px;height:13px;"></i>
-                            Security
-                        </a>
                         <a href="/logout.php" class="pdd-signout">
                             <i data-lucide="log-out" style="width:13px;height:13px;"></i>
                             Sign out
@@ -2165,8 +2189,33 @@ function render_layout(string $title, string $content, array $options = []): voi
                 <a href="/index.php"<?= $__nav('index.php') ?>>Home</a>
                 <a href="/documents.php"<?= $__nav('documents.php') ?>>Process maps</a>
                 <a href="/systems.php"<?= $__nav('systems.php') ?>>Systems</a>
-                <a href="/help.php"<?= $__nav('help.php') ?>>Guidance</a>
-                <a href="/dev.php"<?= $__nav('dev.php') ?>>Roadmap</a>
+                <?php
+                $__inResources = in_array($__pg, ['help.php','dev.php','security.php']);
+                ?>
+                <div class="nav-group">
+                    <button class="nav-group-btn<?= $__inResources ? ' open' : '' ?>"
+                            id="navResourcesBtn" aria-haspopup="true"
+                            aria-expanded="<?= $__inResources ? 'true' : 'false' ?>">
+                        Resources
+                        <i data-lucide="chevron-down" style="width:13px;height:13px;"></i>
+                    </button>
+                    <div class="nav-group-menu" id="navResourcesMenu"<?= $__inResources ? '' : ' hidden' ?>>
+                        <a href="/help.php"<?= $__nav('help.php') ?>>
+                            <i data-lucide="book-open" style="width:13px;height:13px;"></i>
+                            Guidance
+                        </a>
+                        <a href="/dev.php"<?= $__nav('dev.php') ?>>
+                            <i data-lucide="map" style="width:13px;height:13px;"></i>
+                            Roadmap
+                        </a>
+                        <?php if ($__loggedIn): ?>
+                        <a href="/security.php"<?= $__nav('security.php') ?>>
+                            <i data-lucide="shield-check" style="width:13px;height:13px;"></i>
+                            Security
+                        </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </nav>
             <div class="site-nav-actions">
                 <?php if ($__canEdit): ?>
@@ -2183,6 +2232,9 @@ function render_layout(string $title, string $content, array $options = []): voi
             <a href="/systems.php"<?= $__nav('systems.php') ?>>Systems</a>
             <a href="/help.php"<?= $__nav('help.php') ?>>Guidance</a>
             <a href="/dev.php"<?= $__nav('dev.php') ?>>Roadmap</a>
+            <?php if ($__loggedIn): ?>
+                <a href="/security.php"<?= $__nav('security.php') ?>>Security</a>
+            <?php endif; ?>
             <?php if ($__loggedIn): ?>
                 <?php if ($__isAdmin): ?>
                     <a href="/admin.php"<?= $__nav('admin.php') ?> class="mobile-nav-signout">Admin</a>
@@ -2217,6 +2269,20 @@ function render_layout(string $title, string $content, array $options = []): voi
             });
         }
 
+        // ── Resources nav group ──────────────────────────────────
+        var resBtn  = document.getElementById('navResourcesBtn');
+        var resDrop = document.getElementById('navResourcesMenu');
+        if (resBtn && resDrop) {
+            resBtn.addEventListener('click', function(e){
+                e.stopPropagation();
+                var open = resDrop.hidden;
+                resDrop.hidden = !open;
+                resBtn.setAttribute('aria-expanded', String(open));
+                resBtn.classList.toggle('open', open);
+                if (open) lucide.createIcons({ nodes: [resDrop] });
+            });
+        }
+
         // ── Profile dropdown ─────────────────────────────────────
         var profileBtn  = document.getElementById('profileBtn');
         var profileDrop = document.getElementById('profileDropdown');
@@ -2230,7 +2296,7 @@ function render_layout(string $title, string $content, array $options = []): voi
             });
         }
 
-        // ── Close both on outside click ──────────────────────────
+        // ── Close all on outside click ───────────────────────────
         document.addEventListener('click', function(e){
             if (ham && mnav && !ham.contains(e.target) && !mnav.contains(e.target)){
                 mnav.classList.remove('open');
@@ -2240,6 +2306,11 @@ function render_layout(string $title, string $content, array $options = []): voi
             if (profileDrop && profileBtn && !profileBtn.contains(e.target)){
                 profileDrop.hidden = true;
                 profileBtn.setAttribute('aria-expanded', 'false');
+            }
+            if (resDrop && resBtn && !resBtn.contains(e.target) && !resDrop.contains(e.target)){
+                resDrop.hidden = true;
+                resBtn.setAttribute('aria-expanded', 'false');
+                resBtn.classList.remove('open');
             }
         });
     })();
