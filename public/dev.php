@@ -45,7 +45,7 @@ ob_start();
         ?>
         <div style="display:grid;grid-template-columns:28px 1fr;gap:0.5rem;
                     padding:0.9rem 0;<?= $i < count($done) - 1 ? 'border-bottom:1px solid var(--border);' : '' ?>">
-            <span style="font-size:1.1rem;color:var(--success);padding-top:0.05rem;">✓</span>
+            <i data-lucide="check-circle-2" style="width:1.1rem;height:1.1rem;color:var(--success);flex-shrink:0;margin-top:0.1rem;"></i>
             <div>
                 <strong style="font-size:0.9rem;"><?= h($title) ?></strong>
                 <p style="margin:0.2rem 0 0;font-size:0.82rem;color:var(--muted);"><?= h($body) ?></p>
@@ -90,7 +90,7 @@ ob_start();
         ?>
         <div style="display:grid;grid-template-columns:28px 1fr;gap:0.5rem;
                     padding:0.9rem 0;<?= $i < count($planned) - 1 ? 'border-bottom:1px solid var(--border);' : '' ?>">
-            <span style="font-size:0.95rem;color:var(--muted);padding-top:0.1rem;">○</span>
+            <i data-lucide="circle" style="width:0.95rem;height:0.95rem;color:var(--muted);flex-shrink:0;margin-top:0.15rem;"></i>
             <div>
                 <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;">
                     <strong style="font-size:0.9rem;"><?= h($title) ?></strong>
@@ -189,5 +189,6 @@ ob_start();
     </p>
 </div>
 
+<script>document.addEventListener('DOMContentLoaded', () => { if (typeof lucide !== 'undefined') lucide.createIcons(); });</script>
 <?php
 render_layout('Development & Roadmap', ob_get_clean() ?: '');

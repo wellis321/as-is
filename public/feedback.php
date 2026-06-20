@@ -13,6 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     exit;
 }
+if (!csrf_verify()) {
+    http_response_code(403);
+    exit('Invalid CSRF token.');
+}
 
 $type    = h(trim((string) ($_POST['type']    ?? 'other')));
 $message = h(trim((string) ($_POST['message'] ?? '')));

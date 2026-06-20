@@ -27,6 +27,8 @@ header('X-Frame-Options: DENY');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
 header('X-Permitted-Cross-Domain-Policies: none');
+// Allow Google Fonts and Lucide CDN; block everything else by default
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
 if (APP_ENV !== 'local') {
     header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 }

@@ -45,6 +45,7 @@ if ($lanes === []) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify()) { redirect('/documents.php'); }
     $stepId      = (int) ($_POST['step_id']     ?? 0);
     $step        = $stepId > 0 ? fetch_step($pdo, $stepId) : null;
     $isEdit      = $step !== null && (int) $step['as_is_id'] === $asIsId;
@@ -105,6 +106,7 @@ ob_start();
 
 <div class="card">
     <form method="post" class="form-grid">
+        <?= csrf_field() ?>
         <input type="hidden" name="slug" value="<?= h($document['slug']) ?>">
         <?php if ($isEdit): ?>
             <input type="hidden" name="step_id" value="<?= (int) $step['id'] ?>">

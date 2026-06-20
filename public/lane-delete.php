@@ -32,6 +32,7 @@ $stepCount->execute([$laneId]);
 $steps = (int) $stepCount->fetchColumn();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify()) { redirect('/documents.php'); }
     $confirmName = trim((string) ($_POST['confirm_name'] ?? ''));
 
     if (strcasecmp($confirmName, $lane['name']) !== 0) {
@@ -68,6 +69,7 @@ ob_start();
     <p>Type the swimlane name <strong><?= h($lane['name']) ?></strong> below to confirm.</p>
 
     <form method="post" class="form-grid">
+        <?= csrf_field() ?>
         <input type="hidden" name="slug" value="<?= h($document['slug']) ?>">
         <input type="hidden" name="lane_id" value="<?= (int) $lane['id'] ?>">
         <div>

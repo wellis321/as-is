@@ -11,6 +11,7 @@ $documents = [];
 $notice    = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'load_examples') {
+    if (!csrf_verify()) { redirect('/documents.php'); }
     try {
         $pdo = db();
         ensure_schema($pdo);
@@ -65,6 +66,7 @@ ob_start();
             <a class="btn btn-secondary" href="/view.php?slug=sample-customer-first">Browse an example</a>
         </div>
         <form method="post" style="margin-top:1rem;">
+            <?= csrf_field() ?>
             <input type="hidden" name="action" value="load_examples">
             <button class="btn btn-link" type="submit">Add example maps to your library</button>
         </form>

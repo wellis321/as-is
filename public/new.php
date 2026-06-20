@@ -19,6 +19,7 @@ $capturedDate = '';
 $version     = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify()) { redirect('/documents.php'); }
     $title        = trim((string) ($_POST['title']        ?? ''));
     $description  = trim((string) ($_POST['description']  ?? ''));
     $status       = valid_status((string) ($_POST['status'] ?? 'draft'));
@@ -55,6 +56,7 @@ ob_start();
 
 <div class="card">
     <form method="post" class="form-grid">
+        <?= csrf_field() ?>
         <div>
             <label for="title">Title</label>
             <input type="text" id="title" name="title" value="<?= h($title) ?>" required placeholder="e.g. Customer First — Repairs Intake">

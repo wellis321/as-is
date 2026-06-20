@@ -16,6 +16,7 @@ if ($document === null) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify()) { redirect('/documents.php'); }
     $confirmTitle = trim((string) ($_POST['confirm_title'] ?? ''));
 
     if (strcasecmp($confirmTitle, $document['title']) !== 0) {
@@ -51,6 +52,7 @@ ob_start();
     <p>Type the document title <strong><?= h($document['title']) ?></strong> below to confirm.</p>
 
     <form method="post" class="form-grid">
+        <?= csrf_field() ?>
         <input type="hidden" name="slug" value="<?= h($document['slug']) ?>">
         <div>
             <label for="confirm_title">Confirm title</label>

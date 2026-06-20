@@ -28,6 +28,7 @@ if ($document === null) {
 $asIsId = (int) $document['id'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify()) { redirect('/documents.php'); }
     $title       = trim((string) ($_POST['title']       ?? ''));
     $slug        = trim((string) ($_POST['slug']        ?? ''));
     $description = trim((string) ($_POST['description'] ?? ''));
@@ -118,14 +119,14 @@ ob_start();
 <!-- ── Workflow progress tracker ──────────────────────────────────── -->
 <div class="build-tracker no-print">
     <a href="#details"     class="build-stage <?= $stageClass(1) ?>">
-        <div class="build-num"><?= $stageClass(1) === 'is-done' ? '✓' : '1' ?></div>
+        <div class="build-num"><?= $stageClass(1) === 'is-done' ? '<i data-lucide="check" style="width:0.9em;height:0.9em;"></i>' : '1' ?></div>
         <div class="build-info">
             <div class="build-name">Details</div>
             <div class="build-status"><?= $stageClass(1) === 'is-current' ? 'Fill in title &amp; metadata' : 'Complete' ?></div>
         </div>
     </a>
     <a href="#lanes"       class="build-stage <?= $stageClass(2) ?>">
-        <div class="build-num"><?= $stageClass(2) === 'is-done' ? '✓' : '2' ?></div>
+        <div class="build-num"><?= $stageClass(2) === 'is-done' ? '<i data-lucide="check" style="width:0.9em;height:0.9em;"></i>' : '2' ?></div>
         <div class="build-info">
             <div class="build-name">Swimlanes</div>
             <div class="build-status">
@@ -136,7 +137,7 @@ ob_start();
         </div>
     </a>
     <a href="#steps"       class="build-stage <?= $stageClass(3) ?>">
-        <div class="build-num"><?= $stageClass(3) === 'is-done' ? '✓' : '3' ?></div>
+        <div class="build-num"><?= $stageClass(3) === 'is-done' ? '<i data-lucide="check" style="width:0.9em;height:0.9em;"></i>' : '3' ?></div>
         <div class="build-info">
             <div class="build-name">Steps</div>
             <div class="build-status">
@@ -148,7 +149,7 @@ ob_start();
         </div>
     </a>
     <a href="#connections" class="build-stage <?= $stageClass(4) ?>">
-        <div class="build-num"><?= $stageClass(4) === 'is-done' ? '✓' : '4' ?></div>
+        <div class="build-num"><?= $stageClass(4) === 'is-done' ? '<i data-lucide="check" style="width:0.9em;height:0.9em;"></i>' : '4' ?></div>
         <div class="build-info">
             <div class="build-name">Connections</div>
             <div class="build-status">
@@ -170,6 +171,7 @@ ob_start();
 <div class="card" id="details">
     <h2>Details</h2>
     <form method="post" class="form-grid">
+        <?= csrf_field() ?>
         <input type="hidden" name="slug" value="<?= h($document['slug']) ?>">
 
         <div>
@@ -262,18 +264,20 @@ $laneColours = ['#ffffff', '#e8eaed'];
                         <td style="width:80px;">
                             <?php if ($i > 0): ?>
                                 <form class="inline-form" method="post" action="/lane-reorder.php">
+                                    <?= csrf_field() ?>
                                     <input type="hidden" name="slug"      value="<?= h($document['slug']) ?>">
                                     <input type="hidden" name="lane_id"   value="<?= (int) $lane['id'] ?>">
                                     <input type="hidden" name="direction" value="up">
-                                    <button class="btn btn-link btn-sm" type="submit" title="Move up">&#8593;</button>
+                                    <button class="btn btn-link btn-sm" type="submit" title="Move up"><i data-lucide="chevron-up" style="width:1rem;height:1rem;"></i></button>
                                 </form>
                             <?php endif; ?>
                             <?php if ($i < count($lanes) - 1): ?>
                                 <form class="inline-form" method="post" action="/lane-reorder.php">
+                                    <?= csrf_field() ?>
                                     <input type="hidden" name="slug"      value="<?= h($document['slug']) ?>">
                                     <input type="hidden" name="lane_id"   value="<?= (int) $lane['id'] ?>">
                                     <input type="hidden" name="direction" value="down">
-                                    <button class="btn btn-link btn-sm" type="submit" title="Move down">&#8595;</button>
+                                    <button class="btn btn-link btn-sm" type="submit" title="Move down"><i data-lucide="chevron-down" style="width:1rem;height:1rem;"></i></button>
                                 </form>
                             <?php endif; ?>
                         </td>
@@ -306,6 +310,7 @@ $laneColours = ['#ffffff', '#e8eaed'];
     <?php endif; ?>
 
     <form method="post" action="/lane-create.php" class="form-grid" style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
+        <?= csrf_field() ?>
         <input type="hidden" name="slug" value="<?= h($document['slug']) ?>">
         <input type="hidden" name="color" value="#ffffff"><!-- colour is automatic; value unused -->
         <div style="display:grid;grid-template-columns:1fr auto;gap:0.75rem;align-items:end;">
@@ -481,11 +486,11 @@ $laneColours = ['#ffffff', '#e8eaed'];
                                 <strong><?= (int) $c['from_number'] ?>.</strong>
                                 <?= h($c['from_title']) ?>
                             </td>
-                            <td style="color:var(--muted);font-size:1.1rem;padding:0.5rem;">&#8594;</td>
+                            <td style="color:var(--muted);padding:0.5rem;"><i data-lucide="arrow-right" style="width:1rem;height:1rem;"></i></td>
                             <td style="color:var(--muted);font-size:0.875rem;">
                                 <?= $c['label'] !== null ? h($c['label']) : '<em>—</em>' ?>
                             </td>
-                            <td style="color:var(--muted);font-size:1.1rem;padding:0.5rem;">&#8594;</td>
+                            <td style="color:var(--muted);padding:0.5rem;"><i data-lucide="arrow-right" style="width:1rem;height:1rem;"></i></td>
                             <td>
                                 <strong><?= (int) $c['to_number'] ?>.</strong>
                                 <?= h($c['to_title']) ?>
@@ -513,6 +518,7 @@ $laneColours = ['#ffffff', '#e8eaed'];
         <?php endif; ?>
 
         <form method="post" action="/connection-create.php" style="padding-top:1rem;border-top:1px solid var(--border);">
+            <?= csrf_field() ?>
             <input type="hidden" name="slug" value="<?= h($document['slug']) ?>">
             <div class="connection-row" style="margin-bottom:0.75rem;">
                 <div>
@@ -525,7 +531,7 @@ $laneColours = ['#ffffff', '#e8eaed'];
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="arrow-label">&#8594;</div>
+                <div class="arrow-label"><i data-lucide="arrow-right" style="width:0.9rem;height:0.9rem;"></i></div>
                 <div>
                     <label for="to_step_id">To step</label>
                     <select id="to_step_id" name="to_step_id" required>

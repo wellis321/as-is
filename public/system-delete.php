@@ -29,6 +29,7 @@ if ($stepCount === 0) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify()) { redirect('/systems.php'); }
     $confirmName = trim((string) ($_POST['confirm_name'] ?? ''));
 
     if (strcasecmp($confirmName, $system['name']) !== 0) {
@@ -65,6 +66,7 @@ ob_start();
     <p>Type the system name <strong><?= h($system['name']) ?></strong> below to confirm.</p>
 
     <form method="post" class="form-grid">
+        <?= csrf_field() ?>
         <input type="hidden" name="system_id" value="<?= (int) $system['id'] ?>">
         <div>
             <label for="confirm_name">Confirm name</label>

@@ -104,7 +104,7 @@ ob_start();
 <?php endif; ?>
 
 <!-- ── Summary stat links ─────────────────────────────────────────── -->
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.5rem;">
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:1rem;margin-bottom:1.5rem;">
 
     <a href="/documents.php" style="text-decoration:none;color:inherit;
         background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
@@ -140,16 +140,25 @@ ob_start();
         background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
         padding:1.1rem 1.25rem;display:block;transition:border-color .15s;"
         onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:2rem;font-weight:700;line-height:1.1;">→</div>
+        <i data-lucide="map" style="width:1.75rem;height:1.75rem;color:var(--accent);display:block;margin-bottom:0.5rem;"></i>
         <div style="font-size:0.8rem;color:var(--muted);margin-top:0.2rem;">Roadmap &amp; planned features</div>
         <div style="font-size:0.75rem;margin-top:0.5rem;color:var(--accent);font-weight:600;">View roadmap &rarr;</div>
+    </a>
+
+    <a href="/security.php" style="text-decoration:none;color:inherit;
+        background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+        padding:1.1rem 1.25rem;display:block;transition:border-color .15s;"
+        onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <i data-lucide="shield-check" style="width:1.75rem;height:1.75rem;color:var(--success);display:block;margin-bottom:0.5rem;"></i>
+        <div style="font-size:0.8rem;color:var(--muted);margin-top:0.2rem;">Security controls</div>
+        <div style="font-size:0.75rem;margin-top:0.5rem;color:var(--accent);font-weight:600;">View report &rarr;</div>
     </a>
 
     <a href="/setup.php" style="text-decoration:none;color:inherit;
         background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
         padding:1.1rem 1.25rem;display:block;transition:border-color .15s;"
         onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:2rem;font-weight:700;line-height:1.1;">⚙</div>
+        <i data-lucide="settings" style="width:1.75rem;height:1.75rem;color:var(--muted);display:block;margin-bottom:0.5rem;"></i>
         <div style="font-size:0.8rem;color:var(--muted);margin-top:0.2rem;">Setup &amp; seed data</div>
         <div style="font-size:0.75rem;margin-top:0.5rem;color:var(--accent);font-weight:600;">Open setup &rarr;</div>
     </a>
@@ -312,5 +321,6 @@ ob_start();
     <?php endforeach; ?>
 </div>
 
+<script>document.addEventListener('DOMContentLoaded', () => { if (typeof lucide !== 'undefined') lucide.createIcons(); });</script>
 <?php
 render_layout('Admin', ob_get_clean() ?: '');

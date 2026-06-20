@@ -9,6 +9,9 @@ require_min_role('editor');
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect('/documents.php');
 }
+if (!csrf_verify()) {
+    redirect('/documents.php');
+}
 
 $pdo = db();
 $document = resolve_document_request($pdo);

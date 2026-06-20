@@ -118,28 +118,34 @@ ob_start();
         </p>
         <div class="landing-features">
             <article class="landing-feature-card">
+                <i data-lucide="layout-grid" class="lfc-icon"></i>
                 <h3>Multi-row layout</h3>
                 <p>Steps wrap within each swimlane — a 21-step process fits on screen without endless horizontal scrolling. Lanes grow to fit their content.</p>
             </article>
             <article class="landing-feature-card">
+                <i data-lucide="crosshair" class="lfc-icon"></i>
                 <h3>Click any step to focus</h3>
                 <p>Click a step to highlight it and its immediate connections. Everything else fades to grey. A card panel shows the full description of every related step — drag it out of the way if needed.</p>
             </article>
             <article class="landing-feature-card">
+                <i data-lucide="zoom-in" class="lfc-icon"></i>
                 <h3>Zoom, pan and navigate</h3>
                 <p>Scroll to zoom, drag to pan, or hit <strong>Fit</strong> to see the whole picture. <strong>Full screen</strong> gives the most space to explore a detailed map.</p>
             </article>
         </div>
         <div class="landing-features" style="margin-top:1.5rem;">
             <article class="landing-feature-card">
+                <i data-lucide="git-branch" class="lfc-icon"></i>
                 <h3>Colour-coded connection types</h3>
                 <p>Grey arrows stay within a lane. Blue arrows show handoffs between teams. Amber dashed arrows show loop-backs. Each is visually distinct so you can trace the flow at a glance.</p>
             </article>
             <article class="landing-feature-card">
+                <i data-lucide="panel-right" class="lfc-icon"></i>
                 <h3>Step detail on demand</h3>
                 <p>Clicking a step shows a card list of all steps in focus — including their description, action type icon, and any linked systems. No need to open a separate edit screen.</p>
             </article>
             <article class="landing-feature-card">
+                <i data-lucide="printer" class="lfc-icon"></i>
                 <h3>Print-ready</h3>
                 <p>The <strong>Print</strong> button opens a clean, navigation-free version your browser can print or save as a PDF — useful for workshops and sign-off sessions.</p>
             </article>
@@ -157,14 +163,17 @@ ob_start();
         </p>
         <div class="landing-features">
             <article class="landing-feature-card">
+                <i data-lucide="users" class="lfc-icon"></i>
                 <h3>From interviews to structure</h3>
                 <p>Workshops and conversations still matter. This does not replace them — it gives what you learn a proper home.</p>
             </article>
             <article class="landing-feature-card">
+                <i data-lucide="share-2" class="lfc-icon"></i>
                 <h3>Built for communication</h3>
                 <p>The goal is the same as a classic AS-IS: help people understand a complex thing. The difference is you can change it without redrawing everything.</p>
             </article>
             <article class="landing-feature-card">
+                <i data-lucide="book-open" class="lfc-icon"></i>
                 <h3>A living record</h3>
                 <p>Publish maps when they are ready, edit them when reality shifts, and share links instead of emailing PDFs.</p>
             </article>

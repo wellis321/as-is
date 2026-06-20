@@ -27,6 +27,7 @@ $connectionCount->execute([$stepId, $stepId]);
 $connections = (int) $connectionCount->fetchColumn();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify()) { redirect('/documents.php'); }
     $confirmTitle = trim((string) ($_POST['confirm_title'] ?? ''));
 
     if (strcasecmp($confirmTitle, $step['title']) !== 0) {
@@ -63,6 +64,7 @@ ob_start();
     <p>Type the step title <strong><?= h($step['title']) ?></strong> below to confirm.</p>
 
     <form method="post" class="form-grid">
+        <?= csrf_field() ?>
         <input type="hidden" name="slug" value="<?= h($document['slug']) ?>">
         <input type="hidden" name="step_id" value="<?= (int) $step['id'] ?>">
         <div>

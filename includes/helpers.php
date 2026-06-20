@@ -823,7 +823,7 @@ function action_type_icon(string $type): string
         'check'        => 'check-circle',
         'escalation'   => 'arrow-up-circle',
         'automated'    => 'cpu',
-        'api-call'     => 'webhook',
+        'api-call'     => 'plug-2',
         'notification' => 'bell',
         'visit'        => 'map-pin',
         'payment'      => 'credit-card',
@@ -1709,6 +1709,14 @@ function render_layout(string $title, string $content, array $options = []): voi
             padding: 1.5rem;
         }
 
+        .landing-feature-card .lfc-icon {
+            display: block;
+            width: 1.75rem;
+            height: 1.75rem;
+            color: var(--accent);
+            margin-bottom: 0.75rem;
+        }
+
         .landing-feature-card h3 {
             font-size: 1rem;
             font-weight: 600;
@@ -2219,11 +2227,13 @@ function render_layout(string $title, string $content, array $options = []): voi
         <strong style="font-size:0.9rem;">Share feedback</strong>
         <button onclick="document.getElementById('feedback-panel').hidden=true;
                          document.getElementById('feedback-toggle').setAttribute('aria-expanded','false');"
-                style="background:none;border:none;cursor:pointer;font-size:1.2rem;
-                       color:var(--muted);padding:0;line-height:1;" aria-label="Close">&#215;</button>
+                style="background:none;border:none;cursor:pointer;
+                       color:var(--muted);padding:0;line-height:1;display:flex;" aria-label="Close">
+                <i data-lucide="x" style="width:1.1rem;height:1.1rem;"></i></button>
     </div>
     <form id="feedback-form" onsubmit="submitFeedback(event)">
         <input type="hidden" id="fb-page" name="page">
+        <?= csrf_field() ?>
         <div style="margin-bottom:0.6rem;">
             <label for="fb-type" style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:0.25rem;">Type</label>
             <select id="fb-type" name="type" style="width:100%;font-size:0.85rem;">
@@ -2243,7 +2253,7 @@ function render_layout(string $title, string $content, array $options = []): voi
         </div>
         <button type="submit" class="btn btn-sm" style="width:100%;">Send feedback</button>
         <p id="fb-thanks" hidden style="margin:0.5rem 0 0;font-size:0.8rem;color:var(--success);text-align:center;">
-            ✓ Thank you — feedback received.
+            <i data-lucide="check-circle-2" style="width:0.9rem;height:0.9rem;vertical-align:-0.1em;"></i> Thank you — feedback received.
         </p>
     </form>
 </div>

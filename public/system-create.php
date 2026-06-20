@@ -19,6 +19,7 @@ $owner       = '';
 $contact     = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify()) { redirect('/systems.php'); }
     $name        = trim((string) ($_POST['name']        ?? ''));
     $description = trim((string) ($_POST['description'] ?? ''));
     $category    = trim((string) ($_POST['category']    ?? ''));
@@ -57,7 +58,7 @@ ob_start();
 
 <div class="card">
     <form method="post" class="form-grid">
-
+        <?= csrf_field() ?>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
             <div>
                 <label for="name">Name <span style="color:var(--danger);">*</span></label>

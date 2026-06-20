@@ -33,6 +33,7 @@ if ($connection === false) {
 $confirmPhrase = (int) $connection['from_number'] . ' to ' . (int) $connection['to_number'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify()) { redirect('/documents.php'); }
     $typed = trim((string) ($_POST['confirm_phrase'] ?? ''));
 
     if ($typed !== $confirmPhrase) {
@@ -65,15 +66,16 @@ ob_start();
     <p>You are about to remove the connection:</p>
     <p>
         <strong><?= (int) $connection['from_number'] ?>. <?= h($connection['from_title']) ?></strong>
-        &#8594;
+        <i data-lucide="arrow-right" class="licon"></i>
         <?php if (!empty($connection['label'])): ?>
-            <em><?= h($connection['label']) ?></em> &#8594;
+            <em><?= h($connection['label']) ?></em> <i data-lucide="arrow-right" class="licon"></i>
         <?php endif; ?>
         <strong><?= (int) $connection['to_number'] ?>. <?= h($connection['to_title']) ?></strong>
     </p>
     <p>Type <strong><?= h($confirmPhrase) ?></strong> below to confirm.</p>
 
     <form method="post" class="form-grid">
+        <?= csrf_field() ?>
         <input type="hidden" name="slug" value="<?= h($document['slug']) ?>">
         <input type="hidden" name="connection_id" value="<?= (int) $connection['id'] ?>">
         <div>

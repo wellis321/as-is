@@ -29,6 +29,7 @@ $owner       = (string) ($system['owner']       ?? '');
 $contact     = (string) ($system['contact']     ?? '');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify()) { redirect('/systems.php'); }
     $name        = trim((string) ($_POST['name']        ?? ''));
     $description = trim((string) ($_POST['description'] ?? ''));
     $category    = trim((string) ($_POST['category']    ?? ''));
@@ -68,6 +69,7 @@ ob_start();
 
 <div class="card">
     <form method="post" class="form-grid">
+        <?= csrf_field() ?>
         <input type="hidden" name="id" value="<?= $systemId ?>">
 
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">

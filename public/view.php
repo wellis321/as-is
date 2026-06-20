@@ -869,13 +869,14 @@ clickHandlers.forEach(({ el: g, step }) => {
                         border-bottom:2px solid var(--border);
                         cursor:grab;user-select:none;">
                 <span style="display:flex;align-items:center;gap:0.4rem;">
-                    <span style="color:var(--muted);font-size:1rem;line-height:1;letter-spacing:1px;">&#8942;&#8942;</span>
+                    <i data-lucide="grip-vertical" style="width:0.9rem;height:0.9rem;color:var(--muted);flex-shrink:0;"></i>
                     <span style="font-size:0.7rem;font-weight:700;color:var(--muted);
                                  text-transform:uppercase;letter-spacing:0.06em;">
                         ${count} step${count !== 1 ? 's' : ''} in focus</span>
                 </span>
                 <button id="closeDetail" style="background:none;border:none;cursor:pointer;
-                        font-size:1.2rem;color:var(--muted);padding:0;line-height:1;">&#215;</button>
+                        color:var(--muted);padding:0;line-height:1;display:flex;">
+                    <i data-lucide="x" style="width:1rem;height:1rem;"></i></button>
             </div>
             <div style="overflow-y:auto;max-height:340px;">${cards}</div>`;
 
@@ -894,6 +895,7 @@ clickHandlers.forEach(({ el: g, step }) => {
         detail.style.top   = Math.max(wrap.scrollTop  + 6, py) + 'px';
         detail.style.width = PANEL_W + 'px';
         detail.hidden = false;
+        if (typeof lucide !== 'undefined') lucide.createIcons({ nameAttr: 'data-lucide', nodes: [detail] });
 
         document.getElementById('closeDetail')
             ?.addEventListener('click', () => { detail.hidden = true; clearHighlight(); });
