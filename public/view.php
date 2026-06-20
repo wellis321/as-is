@@ -248,14 +248,15 @@ function renderSwimlane(data, canvasEl) {
     if (!lanes.length || !steps.length) return null;
 
     // ── Layout constants ─────────────────────────────────────────
-    const LEFT_PAD = 20;   // left content padding (no dedicated label column)
-    const RIGHT_PAD = 130; // right padding — lane label lives here
-    const NODE_W  = 152;   // node width
-    const NODE_H  = 66;    // node height
-    const H_GAP   = 28;    // horizontal gap between columns
-    const LANE_H  = 168;   // lane band height — generous for readability
-    const TOP_PAD = 52;    // room above first lane for loop-back arrows
-    const BOT_PAD = 20;
+    const LEFT_PAD  = 20;  // padding left of first node column
+    const RIGHT_PAD = 20;  // padding right of last node column
+    const LANE_HDR  = 28;  // header strip height at top of each lane (holds the label)
+    const NODE_W    = 152; // node width
+    const NODE_H    = 66;  // node height
+    const H_GAP     = 28;  // horizontal gap between columns
+    const LANE_H    = 168; // total lane band height (header + node area)
+    const TOP_PAD   = 52;  // room above first lane for loop-back arrows
+    const BOT_PAD   = 20;
 
     // Assign each unique step_number a column index (left to right)
     const sortedNums = [...new Set(steps.map(s => s.step_number))].sort((a, b) => a - b);
@@ -267,13 +268,13 @@ function renderSwimlane(data, canvasEl) {
 
     const laneIdxOf = new Map(lanes.map((l, i) => [l.id, i]));
 
-    // Centre of each step node in SVG coordinates
+    // Centre of each step node — vertically centred in the area below the header strip
     const pos = new Map();
     steps.forEach(s => {
         const col = colOf.get(s.step_number) ?? 0;
         const li  = laneIdxOf.get(s.lane_id) ?? 0;
         const cx  = LEFT_PAD + col * (NODE_W + H_GAP) + NODE_W / 2;
-        const cy  = TOP_PAD + li * LANE_H + LANE_H / 2;
+        const cy  = TOP_PAD + li * LANE_H + LANE_HDR + (LANE_H - LANE_HDR) / 2;
         pos.set(s.id, { cx, cy, x: cx - NODE_W / 2, y: cy - NODE_H / 2 });
     });
 
@@ -355,20 +356,44 @@ function renderSwimlane(data, canvasEl) {
     svg.appendChild(defs);
 
     // ── Lane bands ────────────────────────────────────────────────
-    // Each band uses the lane's stored colour as a tinted fill; label sits top-right.
+    // Each band has a tinted fill + a LANE_HDR-tall header strip at the top that
+    // carries the lane name in large readable text — visible at any zoom level.
     lanes.forEach((lane, i) => {
         const { fill, stroke } = parseLaneColor(lane.color, i);
         const y = TOP_PAD + i * LANE_H;
 
+        // Full band background
         svg.appendChild(el('rect', { x:0, y, width:totalW, height:LANE_H, fill }));
-        svg.appendChild(el('line', { x1:0, y1:y+LANE_H, x2:totalW, y2:y+LANE_H, stroke:'#d1d5db', 'stroke-width':1 }));
 
-        // Lane name — top-right corner of the band, serif to match the illustrated style
+        // Header strip — slightly more opaque tint of the lane colour
+        const hr = parseInt(stroke.slice(1,3), 16);
+        const hg = parseInt(stroke.slice(3,5), 16);
+        const hb = parseInt(stroke.slice(5,7), 16);
+        svg.appendChild(el('rect', {
+            x:0, y, width:totalW, height:LANE_HDR,
+            fill: `rgba(${hr},${hg},${hb},0.13)`,
+        }));
+
+        // Separator between header and node area
+        svg.appendChild(el('line', {
+            x1:0, y1:y+LANE_HDR, x2:totalW, y2:y+LANE_HDR,
+            stroke:`rgba(${hr},${hg},${hb},0.25)`, 'stroke-width':1,
+        }));
+
+        // Bottom band separator
+        svg.appendChild(el('line', {
+            x1:0, y1:y+LANE_H, x2:totalW, y2:y+LANE_H,
+            stroke:'#d1d5db', 'stroke-width':1,
+        }));
+
+        // Lane name — left-aligned inside the header strip, large and readable
         const lbl = el('text', {
-            x: totalW - 10, y: y + 18,
-            'text-anchor': 'end', 'dominant-baseline': 'middle',
+            x: LEFT_PAD, y: y + LANE_HDR / 2,
+            'text-anchor': 'start', 'dominant-baseline': 'middle',
             'font-family': "'IBM Plex Serif', Georgia, serif",
-            'font-size': 13, 'font-weight': 600, fill: stroke,
+            'font-size': 14, 'font-weight': 600,
+            'letter-spacing': '0.01em',
+            fill: stroke,
         });
         lbl.textContent = lane.name;
         svg.appendChild(lbl);
