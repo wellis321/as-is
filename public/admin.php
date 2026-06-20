@@ -8,6 +8,47 @@ require_min_role('admin');
 
 $pdo = db();
 
+// ── Handle role change ────────────────────────────────────────────────────────
+$roleNotice = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'change_role') {
+    if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
+        $roleNotice = ['error', 'Invalid request — please try again.'];
+    } else {
+        $targetId  = (int) ($_POST['user_id'] ?? 0);
+        $newRole   = $_POST['role'] ?? '';
+        $myId      = (int) ($_SESSION['user_id'] ?? 0);
+
+        if (!in_array($newRole, ['viewer', 'editor', 'admin'], true)) {
+            $roleNotice = ['error', 'Invalid role.'];
+        } elseif ($targetId === $myId) {
+            $roleNotice = ['error', 'You cannot change your own role.'];
+        } elseif ($targetId > 0) {
+            try {
+                auth_db()->prepare('UPDATE users SET app_role = ? WHERE id = ?')
+                    ->execute([$newRole, $targetId]);
+                $roleNotice = ['success', 'Role updated.'];
+            } catch (Throwable $e) {
+                $roleNotice = ['error', 'Could not update role: ' . $e->getMessage()];
+            }
+        }
+    }
+    // Redirect to avoid re-POST on refresh
+    $_SESSION['admin_notice'] = $roleNotice;
+    redirect('/admin.php#users');
+}
+
+if (isset($_SESSION['admin_notice'])) {
+    $roleNotice = $_SESSION['admin_notice'];
+    unset($_SESSION['admin_notice']);
+}
+
+// Generate CSRF token if not set
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+}
+$csrfToken = $_SESSION['csrf_token'];
+$myUserId  = (int) ($_SESSION['user_id'] ?? 0);
+
 // ── Stats ─────────────────────────────────────────────────────────────────────
 $totalMaps   = (int) $pdo->query("SELECT COUNT(*) FROM as_is_documents")->fetchColumn();
 $published   = (int) $pdo->query("SELECT COUNT(*) FROM as_is_documents WHERE status = 'published'")->fetchColumn();
@@ -54,6 +95,13 @@ ob_start();
         <p>System overview, users, and recent activity.</p>
     </div>
 </header>
+
+<?php if ($roleNotice): ?>
+<div class="notice" style="background:<?= $roleNotice[0] === 'success' ? 'var(--success)' : 'var(--danger)' ?>;
+     color:#fff;padding:0.6rem 1rem;border-radius:var(--r);margin-bottom:1rem;font-size:0.875rem;">
+    <?= h($roleNotice[1]) ?>
+</div>
+<?php endif; ?>
 
 <!-- ── Summary stat links ─────────────────────────────────────────── -->
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.5rem;">
@@ -113,7 +161,8 @@ ob_start();
     <div style="padding:0.9rem 1.25rem;border-bottom:1px solid var(--border);">
         <h2 style="margin:0;font-size:1rem;">Users (<?= count($users) ?>)</h2>
         <p style="margin:0.25rem 0 0;font-size:0.8rem;color:var(--muted);">
-            To add users or change roles, update the seed SQL or provision via Microsoft Entra.
+            Change a role using the dropdown — it saves immediately. You cannot change your own role.
+        To add new users, run the seed SQL or provision via Microsoft Entra.
         </p>
     </div>
     <?php if ($users === []): ?>
@@ -161,11 +210,29 @@ ob_start();
                         <span style="opacity:.4">—</span>
                     <?php endif; ?>
                 </td>
-                <td style="padding:0.6rem 1rem;">
-                    <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;
-                                 letter-spacing:0.04em;padding:0.15rem 0.45rem;border-radius:4px;<?= $rs ?>">
-                        <?= h($u['app_role']) ?>
-                    </span>
+                <td style="padding:0.4rem 1rem;">
+                    <?php if ((int)$u['id'] === $myUserId): ?>
+                        <!-- Cannot edit your own role -->
+                        <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;
+                                     letter-spacing:0.04em;padding:0.15rem 0.45rem;border-radius:4px;<?= $rs ?>">
+                            <?= h($u['app_role']) ?>
+                        </span>
+                    <?php else: ?>
+                        <form method="post" action="/admin.php" style="display:flex;align-items:center;gap:0.35rem;">
+                            <input type="hidden" name="action"     value="change_role">
+                            <input type="hidden" name="user_id"   value="<?= (int)$u['id'] ?>">
+                            <input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
+                            <select name="role" onchange="this.form.submit()"
+                                    style="font-size:0.75rem;font-weight:700;text-transform:uppercase;
+                                           letter-spacing:0.04em;padding:0.15rem 0.4rem;border-radius:4px;
+                                           border:1px solid var(--border);cursor:pointer;<?= $rs ?>
+                                           appearance:none;-webkit-appearance:none;">
+                                <option value="viewer" <?= $u['app_role']==='viewer' ?'selected':'' ?>>Viewer</option>
+                                <option value="editor" <?= $u['app_role']==='editor' ?'selected':'' ?>>Editor</option>
+                                <option value="admin"  <?= $u['app_role']==='admin'  ?'selected':'' ?>>Admin</option>
+                            </select>
+                        </form>
+                    <?php endif; ?>
                 </td>
                 <td style="padding:0.6rem 1rem;font-size:0.8rem;color:var(--muted);">
                     <?= h(ucfirst($u['auth_provider'])) ?>
