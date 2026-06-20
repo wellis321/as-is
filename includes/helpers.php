@@ -994,22 +994,35 @@ function render_layout(string $title, string $content, array $options = []): voi
         }
         .topbar-left span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .topbar-leaves { width: 28px; height: 20px; object-fit: contain; display: block; flex-shrink: 0; }
-        .topbar-right { display: flex; align-items: center; gap: 1rem; margin-left: auto; flex-shrink: 0; }
-        .topbar-user { font-size: 0.72rem; color: rgba(255,255,255,0.65); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 14rem; }
-        .topbar-signout,
-        .topbar-signout:link,
-        .topbar-signout:visited {
-            color: #fff !important;
-            font-size: 0.72rem;
-            font-weight: 600;
-            text-decoration: none !important;
-            white-space: nowrap;
-            padding: 0.28rem 0.65rem;
-            border: 1px solid rgba(255,255,255,0.55);
-            border-radius: 4px;
-            background: rgba(255,255,255,0.14);
+        .topbar-right { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; flex-shrink: 0; }
+
+        /* Profile dropdown */
+        .profile-menu { position: relative; }
+        .profile-btn {
+            display: flex; align-items: center; gap: 0.35rem;
+            background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 5px; color: #fff; font-size: 0.72rem; font-weight: 600;
+            font-family: var(--f-sans); padding: 0.28rem 0.6rem;
+            cursor: pointer; white-space: nowrap;
         }
-        .topbar-signout:hover { background: rgba(255,255,255,0.24); border-color: #fff; color: #fff !important; text-decoration: none !important; }
+        .profile-btn:hover { background: rgba(255,255,255,0.24); border-color: #fff; }
+        .profile-btn svg { flex-shrink: 0; }
+        .profile-dropdown {
+            position: absolute; right: 0; top: calc(100% + 6px);
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--r-lg); box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+            min-width: 170px; z-index: 500; overflow: hidden;
+        }
+        .profile-dropdown a {
+            display: flex; align-items: center; gap: 0.55rem;
+            padding: 0.6rem 0.9rem; font-size: 0.82rem; color: var(--text);
+            text-decoration: none; border-bottom: 1px solid var(--border);
+        }
+        .profile-dropdown a:last-child { border-bottom: none; }
+        .profile-dropdown a:hover { background: var(--bg); }
+        .profile-dropdown a svg { color: var(--muted); flex-shrink: 0; }
+        .profile-dropdown .pdd-signout { color: var(--danger); }
+        .profile-dropdown .pdd-signout svg { color: var(--danger); }
 
         /* ── Site header / nav ───────────────────────────────── */
         .site-header {
@@ -2106,10 +2119,37 @@ function render_layout(string $title, string $content, array $options = []): voi
         </div>
         <div class="topbar-right">
             <?php if ($__loggedIn): ?>
-                <span class="topbar-user" title="<?= h($_SESSION['admin_user'] ?? '') ?>"><?= h($_SESSION['admin_user'] ?? '') ?></span>
-                <a href="/logout.php" class="topbar-signout">Sign out</a>
+                <div class="profile-menu">
+                    <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
+                        <i data-lucide="user" style="width:12px;height:12px;"></i>
+                        <?= h($_SESSION['admin_user'] ?? 'Account') ?>
+                        <i data-lucide="chevron-down" style="width:11px;height:11px;"></i>
+                    </button>
+                    <div class="profile-dropdown" id="profileDropdown" hidden>
+                        <?php if ($__isAdmin): ?>
+                            <a href="/admin.php">
+                                <i data-lucide="settings" style="width:13px;height:13px;"></i>
+                                Admin
+                            </a>
+                        <?php endif; ?>
+                        <?php if (function_exists('is_microsoft_user') && !is_microsoft_user()): ?>
+                            <a href="/profile/change-password.php">
+                                <i data-lucide="key" style="width:13px;height:13px;"></i>
+                                Change password
+                            </a>
+                        <?php endif; ?>
+                        <a href="/security.php">
+                            <i data-lucide="shield-check" style="width:13px;height:13px;"></i>
+                            Security
+                        </a>
+                        <a href="/logout.php" class="pdd-signout">
+                            <i data-lucide="log-out" style="width:13px;height:13px;"></i>
+                            Sign out
+                        </a>
+                    </div>
+                </div>
             <?php else: ?>
-                <a href="/login.php" class="topbar-signout">Sign in</a>
+                <a href="/login.php" class="profile-btn">Sign in</a>
             <?php endif; ?>
         </div>
     </div>
@@ -2127,17 +2167,8 @@ function render_layout(string $title, string $content, array $options = []): voi
                 <a href="/systems.php"<?= $__nav('systems.php') ?>>Systems</a>
                 <a href="/help.php"<?= $__nav('help.php') ?>>Guidance</a>
                 <a href="/dev.php"<?= $__nav('dev.php') ?>>Roadmap</a>
-                <?php if ($__isAdmin): ?>
-                    <a href="/admin.php"<?= $__nav('admin.php') ?>
-                       style="opacity:0.75;font-size:0.8rem;">Admin</a>
-                <?php endif; ?>
             </nav>
             <div class="site-nav-actions">
-                <?php if ($__loggedIn): ?>
-                    <?php if (function_exists('is_microsoft_user') && !is_microsoft_user()): ?>
-                        <a href="/profile/change-password.php" class="site-nav-link-secondary">Password</a>
-                    <?php endif; ?>
-                <?php endif; ?>
                 <?php if ($__canEdit): ?>
                     <a href="/new.php" class="site-nav-cta">+ New AS-IS</a>
                 <?php endif; ?>
@@ -2152,12 +2183,12 @@ function render_layout(string $title, string $content, array $options = []): voi
             <a href="/systems.php"<?= $__nav('systems.php') ?>>Systems</a>
             <a href="/help.php"<?= $__nav('help.php') ?>>Guidance</a>
             <a href="/dev.php"<?= $__nav('dev.php') ?>>Roadmap</a>
-            <?php if ($__isAdmin): ?>
-                <a href="/admin.php"<?= $__nav('admin.php') ?>>Admin</a>
-            <?php endif; ?>
             <?php if ($__loggedIn): ?>
+                <?php if ($__isAdmin): ?>
+                    <a href="/admin.php"<?= $__nav('admin.php') ?> class="mobile-nav-signout">Admin</a>
+                <?php endif; ?>
                 <?php if (function_exists('is_microsoft_user') && !is_microsoft_user()): ?>
-                    <a href="/profile/change-password.php" class="mobile-nav-signout">Password</a>
+                    <a href="/profile/change-password.php" class="mobile-nav-signout">Change password</a>
                 <?php endif; ?>
                 <a href="/logout.php" class="mobile-nav-signout">Sign out</a>
             <?php else: ?>
@@ -2175,19 +2206,40 @@ function render_layout(string $title, string $content, array $options = []): voi
     <script>lucide.createIcons();</script>
     <script>
     (function(){
+        // ── Hamburger ────────────────────────────────────────────
         var ham = document.getElementById('asis-hamburger');
         var mnav = document.getElementById('asis-mobile-nav');
-        if (!ham || !mnav) return;
-        ham.addEventListener('click', function(){
-            var open = mnav.classList.toggle('open');
-            ham.classList.toggle('open', open);
-            ham.setAttribute('aria-expanded', String(open));
-        });
+        if (ham && mnav) {
+            ham.addEventListener('click', function(){
+                var open = mnav.classList.toggle('open');
+                ham.classList.toggle('open', open);
+                ham.setAttribute('aria-expanded', String(open));
+            });
+        }
+
+        // ── Profile dropdown ─────────────────────────────────────
+        var profileBtn  = document.getElementById('profileBtn');
+        var profileDrop = document.getElementById('profileDropdown');
+        if (profileBtn && profileDrop) {
+            profileBtn.addEventListener('click', function(e){
+                e.stopPropagation();
+                var open = profileDrop.hidden;
+                profileDrop.hidden = !open;
+                profileBtn.setAttribute('aria-expanded', String(open));
+                if (open) lucide.createIcons({ nodes: [profileDrop] });
+            });
+        }
+
+        // ── Close both on outside click ──────────────────────────
         document.addEventListener('click', function(e){
-            if (!ham.contains(e.target) && !mnav.contains(e.target)){
+            if (ham && mnav && !ham.contains(e.target) && !mnav.contains(e.target)){
                 mnav.classList.remove('open');
                 ham.classList.remove('open');
                 ham.setAttribute('aria-expanded', 'false');
+            }
+            if (profileDrop && profileBtn && !profileBtn.contains(e.target)){
+                profileDrop.hidden = true;
+                profileBtn.setAttribute('aria-expanded', 'false');
             }
         });
     })();
