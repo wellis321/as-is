@@ -435,6 +435,13 @@ $laneColours = ['#ffffff', '#e8eaed'];
                             <div class="row-actions">
                                 <a class="btn btn-secondary btn-sm"
                                    href="/step-edit.php?slug=<?= rawurlencode($document['slug']) ?>&step_id=<?= (int) $step['id'] ?>">Edit</a>
+                                <form method="post" action="/step-clone.php" style="display:inline;">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="slug"    value="<?= h($document['slug']) ?>">
+                                    <input type="hidden" name="step_id" value="<?= (int) $step['id'] ?>">
+                                    <button type="submit" class="btn btn-secondary btn-sm"
+                                            title="Duplicate this step">Clone</button>
+                                </form>
                                 <a class="lnk-danger"
                                    href="/step-delete.php?slug=<?= rawurlencode($document['slug']) ?>&step_id=<?= (int) $step['id'] ?>">Delete</a>
                             </div>
@@ -443,7 +450,14 @@ $laneColours = ['#ffffff', '#e8eaed'];
                 <?php endforeach; ?>
             </tbody>
         </table>
+    <?php if ($steps !== [] && !$hasConnections): ?>
+        <div style="padding:0.7rem 1.25rem;background:oklch(97% 0.01 220);border-top:1px solid var(--border);
+                    display:flex;align-items:center;gap:0.6rem;font-size:0.85rem;">
+            <i data-lucide="arrow-down-circle" style="width:1rem;height:1rem;color:var(--accent);flex-shrink:0;"></i>
+            <span>Steps added — now <a href="#connections" style="color:var(--accent);font-weight:600;">add connections</a> to turn them into a flow diagram.</span>
+        </div>
     <?php endif; ?>
+    <?php endif; ?><?php // closes: if ($lanes===[]): ... elseif ... else: ?>
 </div>
 
 <!-- ── Connections ───────────────────────────────────────────────── -->

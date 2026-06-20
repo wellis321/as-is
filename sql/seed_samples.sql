@@ -194,22 +194,56 @@ SET @l3_t  = (SELECT id FROM lanes WHERE as_is_id = @doc3 AND name = 'Tenant'),
     @l3_ho = (SELECT id FROM lanes WHERE as_is_id = @doc3 AND name = 'Housing Officer'),
     @l3_tr = (SELECT id FROM lanes WHERE as_is_id = @doc3 AND name = 'Trade Team');
 
+-- Steps 1-6 same as before; step 5 is now a Subprocess to demonstrate that type.
+-- Steps 7-11 add a Parallel gateway showing two simultaneous completion actions.
 INSERT INTO steps (as_is_id, lane_id, step_number, title, description, step_type, action_type) VALUES
-    (@doc3, @l3_t,  1, 'Report repair',      'Tenant calls in to report a repair needed at their property.',                            'start',    'phone'),
-    (@doc3, @l3_ho, 2, 'Log request',        'Log caller details and repair description. Check property notes for vulnerabilities.',    'task',     'data-entry'),
-    (@doc3, @l3_ho, 3, 'Assess job',         'Review repair type and urgency against the housing repairs policy.',                     'task',     'check'),
-    (@doc3, @l3_ho, 4, 'Priority?',          'Is this an emergency repair or a routine appointment job?',                             'decision', 'general'),
-    (@doc3, @l3_ho, 5, 'Book appointment',   'Find available slot and book a standard appointment within the target timescale.',       'task',     'data-entry'),
-    (@doc3, @l3_ho, 6, 'Raise urgent job',   'Flag as emergency, notify on-call trade supervisor, and log in the system.',            'task',     'escalation'),
-    (@doc3, @l3_tr, 7, 'Complete repair',    'Trade operative attends, carries out the repair, and records the outcome on site.',     'end',      'visit');
+    (@doc3, @l3_t,  1,  'Report repair',
+        'Tenant calls in to report a repair needed at their property.',
+        'start',      'phone'),
+    (@doc3, @l3_ho, 2,  'Log request',
+        'Log caller details and repair description. Check property notes for vulnerabilities.',
+        'task',       'data-entry'),
+    (@doc3, @l3_ho, 3,  'Assess job',
+        'Review repair type and urgency against the housing repairs policy.',
+        'task',       'check'),
+    (@doc3, @l3_ho, 4,  'Priority?',
+        'Is this an emergency repair or a routine appointment job?',
+        'decision',   'general'),
+    -- SUBPROCESS: booking is itself a multi-step process (find slot → book DRS → confirm)
+    (@doc3, @l3_ho, 5,  'Book & confirm appointment',
+        'Subprocess: find an available slot in DRS, book it, read the date back to the tenant, and send SMS confirmation. This step expands into its own detailed process.',
+        'subprocess', 'data-entry'),
+    (@doc3, @l3_ho, 6,  'Raise urgent job',
+        'Flag as emergency, notify on-call trade supervisor, and log in the system.',
+        'task',       'escalation'),
+    (@doc3, @l3_tr, 7,  'Complete repair',
+        'Trade operative attends, carries out the repair, and records work completed on site.',
+        'task',       'visit'),
+    -- PARALLEL GATEWAY: two things happen simultaneously after the repair is done
+    (@doc3, @l3_tr, 8,  'Completion actions',
+        'Parallel gateway: the trade operative photographs the work and records the outcome in the system at the same time as the housing officer is notified to close the call.',
+        'parallel',   'general'),
+    (@doc3, @l3_tr, 9,  'Photo & record outcome',
+        'Trade operative photographs the completed repair and records the outcome code in the job management system.',
+        'task',       'document'),
+    (@doc3, @l3_ho, 10, 'Notify tenant complete',
+        'Housing officer contacts the tenant to confirm the repair has been completed and check they are satisfied.',
+        'task',       'phone'),
+    (@doc3, @l3_ho, 11, 'Close job',
+        'Complete all call notes, set the outcome code, and close the job in the system.',
+        'end',        'data-entry');
 
-SET @d3s1 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 1),
-    @d3s2 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 2),
-    @d3s3 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 3),
-    @d3s4 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 4),
-    @d3s5 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 5),
-    @d3s6 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 6),
-    @d3s7 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 7);
+SET @d3s1  = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 1),
+    @d3s2  = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 2),
+    @d3s3  = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 3),
+    @d3s4  = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 4),
+    @d3s5  = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 5),
+    @d3s6  = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 6),
+    @d3s7  = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 7),
+    @d3s8  = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 8),
+    @d3s9  = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 9),
+    @d3s10 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 10),
+    @d3s11 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 11);
 
 INSERT INTO step_connections (from_step_id, to_step_id, label) VALUES
     (@d3s1, @d3s2, NULL),
@@ -218,4 +252,11 @@ INSERT INTO step_connections (from_step_id, to_step_id, label) VALUES
     (@d3s4, @d3s5, 'Routine'),
     (@d3s4, @d3s6, 'Emergency'),
     (@d3s5, @d3s7, NULL),
-    (@d3s6, @d3s7, NULL);
+    (@d3s6, @d3s7, NULL),
+    (@d3s7, @d3s8, NULL),
+    -- Parallel: both paths fire simultaneously from the gateway
+    (@d3s8,  @d3s9,  'Simultaneously'),
+    (@d3s8,  @d3s10, 'Simultaneously'),
+    -- Both paths converge at Close job
+    (@d3s9,  @d3s11, NULL),
+    (@d3s10, @d3s11, NULL);

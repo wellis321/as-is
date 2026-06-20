@@ -24,7 +24,10 @@ $step   = $stepId > 0 ? fetch_step($pdo, $stepId) : null;
 $isEdit = $step !== null && (int) $step['as_is_id'] === $asIsId;
 
 $error      = null;
-$stepNumber = $isEdit ? (int) $step['step_number'] : 1;
+// Default to next available step number for new steps
+$allStepNums = array_map(static fn($s) => (int)$s['step_number'], fetch_steps($pdo, $asIsId));
+$nextNumber  = count($allStepNums) > 0 ? max($allStepNums) + 1 : 1;
+$stepNumber  = $isEdit ? (int) $step['step_number'] : $nextNumber;
 $title      = $isEdit ? $step['title'] : '';
 $description = $isEdit ? (string) ($step['description'] ?? '') : '';
 $stepType   = $isEdit ? $step['step_type'] : 'task';
@@ -80,13 +83,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Build list of used step numbers for hint (excluding the current step if editing).
-$usedNumbers = array_map(
-    static fn ($s) => (int) $s['step_number'],
-    fetch_steps($pdo, $asIsId)
-);
+// Build list of used step numbers for conflict hint (excluding current step if editing)
+$usedNumbers = $allStepNums;
 if ($isEdit) {
-    $usedNumbers = array_filter($usedNumbers, static fn ($n) => $n !== (int) ($step['step_number'] ?? 0));
+    $usedNumbers = array_values(array_filter($usedNumbers, static fn ($n) => $n !== (int) ($step['step_number'] ?? 0)));
 }
 sort($usedNumbers);
 
