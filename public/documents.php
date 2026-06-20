@@ -33,14 +33,7 @@ ob_start();
 ?>
 <header>
     <div>
-        <?php if ($documents !== [] && !$error): ?>
-            <h1>Process maps
-                <span style="font-size:1rem;font-weight:400;font-family:var(--f-sans);
-                             color:var(--muted);letter-spacing:0;">(<?= count($documents) ?>)</span>
-            </h1>
-        <?php else: ?>
-            <h1>Process maps</h1>
-        <?php endif; ?>
+        <h1>Process maps</h1>
         <p>Your AS-IS documents — structured process maps you can view, edit, and share.</p>
     </div>
     <div class="actions">
@@ -86,19 +79,15 @@ ob_start();
     <div class="card" style="padding:0;overflow:hidden;">
         <table style="table-layout:fixed;width:100%;">
             <colgroup>
-                <col style="width:34%;">
-                <col style="width:19%;">
-                <col style="width:9%;">
-                <col style="width:6%;">
+                <col style="width:45%;">
+                <col style="width:30%;">
                 <col style="width:13%;">
-                <col style="width:19%;">
+                <col style="width:12%;">
             </colgroup>
             <thead>
                 <tr>
                     <th>Title</th>
                     <th>Team</th>
-                    <th>Status</th>
-                    <th style="text-align:right;padding-right:1.5rem;">Steps</th>
                     <th>Last updated</th>
                     <th></th>
                 </tr>
@@ -129,12 +118,6 @@ ob_start();
                         <td class="td-clip"
                             style="font-size:0.875rem;color:var(--muted);"
                             title="<?= h($team ?: '') ?>"><?= h($team ?: '—') ?></td>
-                        <td>
-                            <span class="badge badge-<?= h($doc['status']) ?>"><?= h($doc['status']) ?></span>
-                        </td>
-                        <td style="text-align:right;padding-right:1.5rem;color:var(--muted);">
-                            <?= (int) $doc['step_count'] ?>
-                        </td>
                         <td class="td-clip" style="font-size:0.875rem;color:var(--muted);">
                             <?= h(date('d M Y', strtotime($doc['updated_at']))) ?>
                         </td>

@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
+if (!is_logged_in()) {
+    http_response_code(401);
+    exit('Unauthorised.');
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     exit;

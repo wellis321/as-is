@@ -2079,6 +2079,7 @@ function render_layout(string $title, string $content, array $options = []): voi
     };
     $__loggedIn = function_exists('is_logged_in') && is_logged_in();
     $__canEdit  = $__loggedIn && function_exists('can_edit_maps') && can_edit_maps();
+    $__isAdmin  = $__loggedIn && function_exists('user_has_min_role') && user_has_min_role('admin');
     ?>
 
     <!-- Research notice -->
@@ -2118,6 +2119,10 @@ function render_layout(string $title, string $content, array $options = []): voi
                 <a href="/systems.php"<?= $__nav('systems.php') ?>>Systems</a>
                 <a href="/help.php"<?= $__nav('help.php') ?>>Guidance</a>
                 <a href="/dev.php"<?= $__nav('dev.php') ?>>Roadmap</a>
+                <?php if ($__isAdmin): ?>
+                    <a href="/admin.php"<?= $__nav('admin.php') ?>
+                       style="opacity:0.75;font-size:0.8rem;">Admin</a>
+                <?php endif; ?>
             </nav>
             <div class="site-nav-actions">
                 <?php if ($__loggedIn): ?>
@@ -2139,6 +2144,9 @@ function render_layout(string $title, string $content, array $options = []): voi
             <a href="/systems.php"<?= $__nav('systems.php') ?>>Systems</a>
             <a href="/help.php"<?= $__nav('help.php') ?>>Guidance</a>
             <a href="/dev.php"<?= $__nav('dev.php') ?>>Roadmap</a>
+            <?php if ($__isAdmin): ?>
+                <a href="/admin.php"<?= $__nav('admin.php') ?>>Admin</a>
+            <?php endif; ?>
             <?php if ($__loggedIn): ?>
                 <?php if (function_exists('is_microsoft_user') && !is_microsoft_user()): ?>
                     <a href="/profile/change-password.php" class="mobile-nav-signout">Password</a>
@@ -2186,7 +2194,8 @@ function render_layout(string $title, string $content, array $options = []): voi
         </div>
     </footer>
 
-<!-- ── Feedback widget ──────────────────────────────────────────────────── -->
+<?php if ($__loggedIn): ?>
+<!-- ── Feedback widget (logged-in users only) ───────────────────────────── -->
 <div id="feedback-toggle" title="Share feedback or report an issue"
      style="position:fixed;bottom:1.25rem;right:1.25rem;z-index:900;
             background:var(--accent);color:#fff;border:none;border-radius:999px;
@@ -2260,6 +2269,7 @@ function submitFeedback(e) {
         .catch(() => alert('Could not send — please try again.'));
 }
 </script>
+<?php endif; ?>
 </body>
 </html>
     <?php

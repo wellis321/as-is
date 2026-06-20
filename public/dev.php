@@ -105,6 +105,74 @@ ob_start();
     </div>
 </div>
 
+<!-- ── SQL files to run ───────────────────────────────────────────── -->
+<div class="card">
+    <h2>SQL files to run</h2>
+    <p style="color:var(--muted);font-size:0.875rem;margin-top:0;">
+        Migration and seed scripts that need to be applied in phpMyAdmin (Hostinger) or run locally.
+        All files are in the <code style="font-size:0.85em;background:var(--bg);padding:0.1rem 0.3rem;border-radius:3px;">sql/</code> folder of the project.
+    </p>
+
+    <div style="display:grid;gap:0;border:1px solid var(--border);border-radius:var(--r);">
+
+        <?php
+        $sqlFiles = [
+            [
+                'file'    => 'migrate_subprocess.sql',
+                'status'  => 'pending',
+                'title'   => 'Add Subprocess &amp; Parallel step types',
+                'detail'  => 'Extends the <code>step_type</code> ENUM on the <code>steps</code> table to include <code>subprocess</code> and <code>parallel</code>. Required before users can create those step types. Safe to run again — the MODIFY is idempotent. <strong>Note:</strong> this also runs automatically on the next page load via <code>ensure_schema()</code>, so it may already be applied.',
+                'env'     => 'Local + Hostinger',
+            ],
+            [
+                'file'    => 'seed_samples.sql',
+                'status'  => 'optional',
+                'title'   => 'Load / refresh sample process maps',
+                'detail'  => 'Deletes and recreates the three sample diagrams: <em>Housing Repair — Quick View</em>, <em>Customer First — Housing Repairs</em>, and <em>Purchase to Pay</em>. Run this after deploy if you want the latest sample content, or use the <a href="/setup.php">Setup page</a> Load samples button.',
+                'env'     => 'Local + Hostinger',
+            ],
+            [
+                'file'    => 'migrate_auth.sql',
+                'status'  => 'done',
+                'title'   => 'Create auth tables (users, login_attempts)',
+                'detail'  => 'Creates the <code>users</code> and <code>login_attempts</code> tables. Already applied — included here for reference.',
+                'env'     => 'Applied',
+            ],
+        ];
+
+        $statusStyle = [
+            'pending'  => ['#d97706', '#fffbeb', 'Pending'],
+            'optional' => ['#0284c7', '#f0f9ff', 'Optional'],
+            'done'     => ['#16a34a', '#f0fdf4', 'Applied'],
+        ];
+
+        foreach ($sqlFiles as $i => $f):
+            [$sc, $sb, $sl] = $statusStyle[$f['status']];
+        ?>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:start;
+                    padding:0.9rem 1rem;<?= $i < count($sqlFiles)-1 ? 'border-bottom:1px solid var(--border);' : '' ?>">
+            <div>
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+                    <code style="font-size:0.85rem;font-weight:600;background:var(--bg);
+                                 padding:0.1rem 0.4rem;border-radius:3px;border:1px solid var(--border);">
+                        sql/<?= h($f['file']) ?>
+                    </code>
+                    <span style="font-size:0.7rem;font-weight:700;text-transform:uppercase;
+                                 letter-spacing:0.05em;padding:0.1rem 0.4rem;border-radius:3px;
+                                 color:<?= $sc ?>;background:<?= $sb ?>;"><?= $sl ?></span>
+                </div>
+                <div style="font-weight:600;font-size:0.875rem;margin-bottom:0.2rem;"><?= $f['title'] ?></div>
+                <p style="margin:0;font-size:0.8rem;color:var(--muted);line-height:1.5;"><?= $f['detail'] ?></p>
+            </div>
+            <div style="font-size:0.75rem;color:var(--muted);white-space:nowrap;text-align:right;padding-top:0.1rem;">
+                <?= h($f['env']) ?>
+            </div>
+        </div>
+        <?php endforeach; ?>
+
+    </div>
+</div>
+
 <!-- ── Notes ──────────────────────────────────────────────────────── -->
 <div class="card" style="background:var(--bg);">
     <h2>Development notes</h2>
