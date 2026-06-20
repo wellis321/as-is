@@ -124,9 +124,7 @@ endif;
         <div>
             <h2 style="margin:0 0 0.1rem;">Process map</h2>
             <span class="diagram-hint">
-                <?= count($steps) ?> steps &middot; <?= count($lanes) ?> lanes
-                &middot; <?= count($connections) ?> connections
-                &middot; Scroll to zoom &middot; Drag to pan
+                Scroll to zoom &middot; Drag to pan
                 &middot; <strong style="color:var(--text);">Click a step to explore</strong>
             </span>
         </div>
@@ -252,7 +250,7 @@ function renderSwimlane(data, canvasEl) {
     const LEFT_PAD   = 20;  // left padding
     const RIGHT_PAD  = 20;  // right padding
     const LANE_HDR   = 28;  // header strip height at top of each lane
-    const LANE_V_PAD = 36;  // padding above and below node rows within a lane
+    const LANE_V_PAD = 48;  // padding above and below node rows within a lane
     const NODE_W     = 152; // node width
     const NODE_H     = 66;  // node height
     const H_GAP      = 28;  // horizontal gap between columns
@@ -350,15 +348,11 @@ function renderSwimlane(data, canvasEl) {
         return t;
     };
 
-    // Lane colours are stored as light tint backgrounds (e.g. #fff3e0).
-    // Use them directly for the band fill; pair with a pre-set deep label colour.
-    const LANE_LABEL_COLORS = ['#6b4f2a', '#2f5c3a', '#1a4469', '#5c1fa0', '#7a1f28', '#4a5568'];
-    const LANE_FILL_FALLBACK = ['#fff3e0', '#e8f5e9', '#e3f2fd', '#f3e8ff', '#fde8e8', '#f0f4f8'];
+    // Monochrome alternating lanes: first lane darker, second lighter, repeating.
+    // Stored lane colours are ignored — consistent neutral palette across all diagrams.
     function parseLaneColor(hex, idx) {
-        // #ffffff means "not set" (edit page default) — use the palette instead
-        const isReal = hex && /^#[0-9a-fA-F]{6}$/.test(hex) && hex.toLowerCase() !== '#ffffff';
-        const fill   = isReal ? hex : LANE_FILL_FALLBACK[idx % LANE_FILL_FALLBACK.length];
-        const stroke = LANE_LABEL_COLORS[idx % LANE_LABEL_COLORS.length];
+        const fill   = idx % 2 === 0 ? '#e5e7eb' : '#f3f4f6';
+        const stroke = '#374151'; // consistent dark charcoal for all lane labels
         return { fill, stroke };
     }
 
@@ -915,8 +909,9 @@ function applyZoom(z) {
 
 function fitToWrap() {
     if (!wrap) return;
-    const available = wrap.clientWidth - 48;
-    applyZoom(Math.min(available / naturalW, 1)); // fit but never enlarge past 100%
+    // Always scale to fill the full container width.
+    // Tall diagrams scroll vertically — height is never the constraint.
+    applyZoom((wrap.clientWidth - 48) / naturalW);
 }
 
 document.getElementById('btnZoomIn') ?.addEventListener('click', () => applyZoom(zoom * 1.25));
