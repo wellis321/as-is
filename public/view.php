@@ -127,6 +127,7 @@ endif;
                 <?= count($steps) ?> steps &middot; <?= count($lanes) ?> lanes
                 &middot; <?= count($connections) ?> connections
                 &middot; Scroll to zoom &middot; Drag to pan
+                &middot; <strong style="color:var(--text);">Click a step to explore</strong>
             </span>
         </div>
         <div class="actions" style="gap:0.35rem;">
@@ -138,15 +139,20 @@ endif;
         </div>
     </div>
 
-    <!-- SVG canvas -->
-    <div class="diagram-wrap" id="diagramWrap" style="border:none;border-radius:0;padding:0;">
+    <!-- SVG canvas + floating step detail -->
+    <div class="diagram-wrap" id="diagramWrap" style="border:none;border-radius:0;padding:0;position:relative;">
         <div id="swimlane-canvas"></div>
+        <div id="step-detail" hidden
+             style="position:absolute;z-index:200;
+                    background:var(--surface);
+                    border:1px solid var(--border);
+                    border-radius:var(--r-lg);
+                    box-shadow:0 6px 24px rgba(0,0,0,0.13);
+                    padding:0.85rem 1rem;
+                    font-size:0.875rem;
+                    max-width:300px;min-width:200px;
+                    pointer-events:all;"></div>
     </div>
-
-    <!-- Step detail panel (shown on click) -->
-    <div id="step-detail" hidden
-         style="padding:0.85rem 1.25rem;background:var(--bg);
-                border-top:1px solid var(--border);font-size:0.875rem;"></div>
 
     <!-- Colour legend -->
     <div style="padding:0.45rem 1.25rem;border-top:1px solid var(--border);
@@ -579,31 +585,57 @@ const ACTION_LABELS = {
     escalation:'Escalation', general:'',
 };
 
-// Step click → detail panel
+// Step click → floating detail panel
 clickHandlers.forEach(({ el: g, step }) => {
-    g.addEventListener('click', () => {
-        if (!detail) return;
+    g.addEventListener('click', e => {
+        if (!detail || !wrap) return;
+        e.stopPropagation();
+
         const sysHtml = step.systems
             ? step.systems.split(', ').map(s => `<span class="sys-tag">${esc(s.trim())}</span>`).join(' ')
             : '';
         const actionLabel = ACTION_LABELS[step.action_type] || '';
-        detail.hidden = false;
         detail.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem;">
                 <div>
-                    <strong>${esc(step.step_number + '. ' + step.title)}</strong>
-                    ${step.description ? `<p style="margin:0.3rem 0 0;color:var(--muted);">${esc(step.description)}</p>` : ''}
-                    <div style="margin-top:0.4rem;display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center;">
+                    <strong style="font-size:0.9rem;">${esc(step.step_number + '. ' + step.title)}</strong>
+                    ${step.description ? `<p style="margin:0.35rem 0 0;color:var(--muted);line-height:1.45;">${esc(step.description)}</p>` : ''}
+                    <div style="margin-top:0.5rem;display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center;">
                         ${actionLabel ? `<span class="badge">${esc(actionLabel)}</span>` : ''}
                         ${sysHtml}
                     </div>
                 </div>
                 <button id="closeDetail" style="background:none;border:none;cursor:pointer;
-                        font-size:1.3rem;color:var(--muted);padding:0;line-height:1;">&#215;</button>
+                        font-size:1.2rem;color:var(--muted);padding:0;line-height:1;flex-shrink:0;">&#215;</button>
             </div>`;
+
+        // Position near the click point, clamped inside the wrap
+        const wrapRect = wrap.getBoundingClientRect();
+        const PANEL_W = 300, PANEL_H = 130; // approximate
+        let px = e.clientX - wrapRect.left + wrap.scrollLeft + 14;
+        let py = e.clientY - wrapRect.top  + wrap.scrollTop  + 14;
+        // Flip left if it would overflow right edge
+        if (px + PANEL_W > wrap.scrollLeft + wrap.clientWidth - 10) {
+            px = (e.clientX - wrapRect.left + wrap.scrollLeft) - PANEL_W - 14;
+        }
+        // Flip up if it would overflow bottom
+        if (py + PANEL_H > wrap.scrollTop + wrap.clientHeight - 10) {
+            py = (e.clientY - wrapRect.top + wrap.scrollTop) - PANEL_H - 14;
+        }
+        detail.style.left = Math.max(wrap.scrollLeft + 6, px) + 'px';
+        detail.style.top  = Math.max(wrap.scrollTop  + 6, py) + 'px';
+        detail.hidden = false;
+
         document.getElementById('closeDetail')
             ?.addEventListener('click', () => { detail.hidden = true; });
     });
+});
+
+// Click on diagram background → dismiss panel
+wrap?.addEventListener('click', e => {
+    if (e.target === wrap || e.target.closest('#swimlane-canvas svg')) {
+        if (detail) detail.hidden = true;
+    }
 });
 
 // ── Zoom / pan ───────────────────────────────────────────────────────────────
