@@ -853,6 +853,34 @@ function clearHighlight() {
     });
 }
 
+// Scroll the page so all highlighted steps are visible after clicking.
+// Uses getBoundingClientRect() on the actual SVG groups for real page positions.
+function scrollToHighlighted(related) {
+    let minPageY = Infinity, maxPageY = -Infinity;
+    related.forEach(id => {
+        const g = nodeGroups.get(id);
+        if (!g) return;
+        const r = g.getBoundingClientRect();
+        minPageY = Math.min(minPageY, r.top  + window.scrollY);
+        maxPageY = Math.max(maxPageY, r.bottom + window.scrollY);
+    });
+    if (minPageY === Infinity) return;
+
+    const rangeH  = maxPageY - minPageY;
+    const vpH     = window.innerHeight;
+    const padding = 80; // breathing room above the topmost step
+
+    let targetY;
+    if (rangeH < vpH - padding * 2) {
+        // All steps fit — centre the group vertically in the viewport
+        targetY = minPageY - (vpH - rangeH) / 2;
+    } else {
+        // Steps span more than a screenful — scroll to show the top of the group
+        targetY = minPageY - padding;
+    }
+    window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+}
+
 // ── Draggable detail panel ────────────────────────────────────────────────────
 // Mousedown on the [data-drag-handle] header starts a drag; the panel can
 // then be repositioned anywhere over the diagram.
@@ -920,6 +948,7 @@ clickHandlers.forEach(({ el: g, step }) => {
             return;
         }
         const related = applyHighlight(step.id);
+        scrollToHighlighted(related);
 
         if (!detail) return;
 
