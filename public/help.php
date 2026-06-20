@@ -39,12 +39,18 @@ ob_start();
     <div style="display:grid;gap:0;">
         <?php
         $quickSteps = [
-            ['1', 'Create a new AS-IS', 'Click <strong>+ New AS-IS</strong> in the navigation (or go to <strong>Process maps</strong>). Give it a title, a description, and optional metadata (owner, department, date, version). Save it — you will land on the Edit page.'],
-            ['2', 'Add swimlanes', 'Swimlanes represent the <em>people or teams</em> involved in the process — for example "Tenant", "Customer First", "Technical Officer". Add one lane per actor. Use the colour picker to colour-code them. Use the ↑ ↓ arrows to put them in the right order.'],
-            ['3', 'Add systems &amp; tools', 'List the software systems or tools used in this process (e.g. Liberty Converse, NEC, DRS). You can then attach them to individual steps so it is clear which system each action takes place in.'],
-            ['4', 'Add steps', 'Each step is one action in the process. Give it a step number (use the same numbering as your source diagram if you have one), choose which swimlane it belongs to, give it a title, and pick a <strong>step type</strong> and an <strong>action type</strong>. Tick any systems used at that step.'],
-            ['5', 'Add connections', 'Connections are the flow arrows between steps — they are what makes the diagram meaningful. In the <em>Connections</em> section on the Edit page, pick a From step and a To step, add an optional label (e.g. "Yes", "No", "New job"), and click Add connection.'],
-            ['6', 'View &amp; share', 'Click <strong>View</strong> to open the interactive swimlane diagram. Scroll to zoom, drag to pan, and click any step to explore its connections. Use the <strong>Print</strong> button for a clean printable version.'],
+            ['1', 'Create a new AS-IS',
+             'Click <strong>+ New AS-IS</strong> in the navigation. Give it a title, description, and optional metadata. Before saving, choose a <strong>Starter swimlanes</strong> template — for example "Housing repairs" automatically creates Tenant, Customer First, and Technical Officer lanes. You land on the Edit page with those lanes already in place.'],
+            ['2', 'Check or add swimlanes',
+             'If you used a template your lanes are ready. Otherwise add them in the <em>Swimlanes</em> section of the Edit page — one lane per team or role. Use the <i data-lucide="chevron-up" class="licon"></i> <i data-lucide="chevron-down" class="licon"></i> arrows to reorder them and the colour picker to colour-code each band.'],
+            ['3', 'Add systems &amp; tools',
+             'List the software systems or tools used in this process (e.g. Liberty Converse, NEC, DRS). You can then attach them to individual steps so it is clear which system each action takes place in.'],
+            ['4', 'Add steps',
+             'Each step is one action in the process. The <strong>step number</strong> is pre-filled with the next available number. Choose the swimlane, title, <strong>step type</strong>, and <strong>action type</strong>. Tick any systems used. If you have similar steps, use the <strong>Clone</strong> button on an existing step to duplicate it and adjust the copy.'],
+            ['5', 'Add connections',
+             'Connections are the arrows that make the diagram meaningful — without them the steps are just a list. Go to the <em>Connections</em> section on the Edit page, pick a From and To step, add an optional label (e.g. "Yes", "No", "Routine"), and click Add connection. The Edit page shows a prompt when steps have been added but no connections exist yet.'],
+            ['6', 'View &amp; share',
+             'Click <strong>View</strong> to open the interactive swimlane diagram. Scroll to zoom, drag to pan, click <strong>Full screen</strong> for workshops, and click any step to see its full description and connections. Use the <strong>Print</strong> button for a clean PDF-ready version.'],
         ];
         foreach ($quickSteps as [$num, $stepTitle, $body]):
         ?>
@@ -55,6 +61,53 @@ ob_start();
                     <p style="margin-top:0.3rem;margin-bottom:0;"><?= $body ?></p>
                 </div>
             </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
+<!-- ── Building faster ───────────────────────────────────────────── -->
+<div class="card">
+    <h2>Building faster</h2>
+    <p>Several shortcuts make building a process map quicker once you know about them.</p>
+
+    <div style="display:grid;gap:0;">
+        <?php
+        $shortcuts = [
+            [
+                'Lane templates',
+                'When you create a new AS-IS, the form includes a <strong>Starter swimlanes</strong> section. Choosing a template creates your lanes automatically when you save — no need to add them one by one on the Edit page. Available templates:',
+                '<ul style="margin:0.4rem 0 0;padding-left:1.25rem;font-size:0.875rem;display:grid;gap:0.2rem;">
+                    <li><strong>Housing repairs</strong> — Tenant / Customer First / Technical Officer</li>
+                    <li><strong>Procurement</strong> — Budget Holder / Procurement / Finance / Supplier</li>
+                    <li><strong>Two teams</strong> or <strong>Three teams</strong> — blank lanes to rename as you go</li>
+                    <li><strong>None</strong> — add lanes manually on the Edit page</li>
+                </ul>',
+            ],
+            [
+                'Clone a step',
+                'Each step row on the Edit page has a <strong>Clone</strong> button. Clicking it creates an exact copy of that step — same lane, same step type, same action type, same systems — with the next available step number and "Copy of [title]" as the name. You are taken straight to the edit form to adjust the title and anything else that differs. Useful for processes with many similar steps.',
+                '',
+            ],
+            [
+                'Auto-suggested step number',
+                'When you add a new step, the step number field is pre-filled with the next number after your highest existing step. You can change it, but you no longer need to count manually.',
+                '',
+            ],
+            [
+                'Connection prompt',
+                'If you have added steps but no connections yet, a prompt appears at the bottom of the steps table linking directly to the Connections form. Connections are easy to forget — they are what turn your list of steps into an actual flow diagram.',
+                '',
+            ],
+        ];
+        foreach ($shortcuts as $i => [$title, $body, $extra]):
+        ?>
+        <div style="display:grid;grid-template-columns:1fr;gap:0;
+                    border-bottom:<?= $i < count($shortcuts)-1 ? '1px solid var(--border)' : 'none' ?>;
+                    padding:1rem 0;">
+            <strong style="font-size:0.9rem;"><?= $title ?></strong>
+            <p style="margin:0.3rem 0 0;font-size:0.875rem;"><?= $body ?></p>
+            <?= $extra ?>
+        </div>
         <?php endforeach; ?>
     </div>
 </div>
@@ -235,8 +288,10 @@ ob_start();
         <li>The <strong>Print</strong> button on the View page opens a clean, navigation-free version that your browser can print or save as PDF.</li>
         <li>Status <em>Draft</em> means work in progress; <em>Published</em> means it has been signed off and is the current agreed picture.</li>
         <li>Use <strong>Click to focus</strong> during workshops — clicking a step centres the conversation on exactly what that step does and what comes before and after it.</li>
-        <li>If the step card panel is in the way after clicking, drag it by its header (the ⠿⠿ icon) to move it to a clear area of the diagram.</li>
-        <li>The <a href="/view.php?slug=sample-repair-quick">Housing Repair — Quick View</a> sample is the simplest example to try first — it shows focus mode, cross-lane handoffs, and the multi-row layout clearly.</li>
+        <li>If the step card panel is in the way after clicking, drag it by its header (the grip icon) to move it anywhere on the diagram.</li>
+        <li>The <a href="/view.php?slug=sample-repair-quick">Housing Repair — Quick View</a> sample is the shortest example and shows all the key features: focus mode, cross-lane handoffs, multi-row layout, and both <strong>Subprocess</strong> and <strong>Parallel gateway</strong> step types.</li>
+        <li>Use the <strong>Lane templates</strong> on the New AS-IS page to skip the lane setup step entirely for common process structures.</li>
+        <li>The <strong>Clone</strong> button on any step creates a duplicate you can adjust — faster than re-entering everything for similar steps.</li>
     </ul>
 </div>
 

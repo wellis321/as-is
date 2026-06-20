@@ -135,6 +135,7 @@ endif;
             <span   class="zoom-level"               id="zoomLabel" >100%</span>
             <button class="btn btn-secondary btn-sm" id="btnZoomOut" title="Zoom out">−</button>
             <button class="btn btn-secondary btn-sm" id="btnFit"     title="Fit to window">Fit</button>
+            <button class="btn btn-secondary btn-sm" id="btnConnStyle" title="Toggle connection style">Curved</button>
             <button class="btn btn-secondary btn-sm" id="btnFull"    title="Full screen">Full screen</button>
         </div>
     </div>
@@ -255,11 +256,11 @@ function renderSwimlane(data, canvasEl) {
     const NODE_W     = 152; // node width
     const NODE_H     = 66;  // node height
     const H_GAP      = 28;  // horizontal gap between columns
-    const V_GAP      = 28;  // vertical gap between rows within a lane
+    const V_GAP      = 44;  // vertical gap between rows — generous so cross-row arrows have room
     const MAX_COLS   = 7;   // steps per row before wrapping to a new row
     const TOP_PAD    = 52;  // space above all lanes (for loop-back arcs)
     const BOT_PAD    = 20;
-    const ROW_H      = NODE_H + V_GAP; // height of one row of nodes (94px)
+    const ROW_H      = NODE_H + V_GAP; // height of one row of nodes (110px)
 
     // ── Step layout: assign each step a (lane_row, lane_col) ─────
     // Steps within each lane are sorted by step_number and arranged
@@ -461,85 +462,67 @@ function renderSwimlane(data, canvasEl) {
         const isCross = !isBack && !sameLane;
         const isWrap  = dropDown && tp.lc < fp.lc;
 
-        let d, stroke, markerId, dash = null;
-        let lx, ly; // label position
+        let d, dStraight, stroke, markerId, dash = null;
+        let lx, ly;
         const ARROW_LEN = 10;
 
         if (isBack) {
-            // Loop-back / backward: amber dashed arc above the earlier row
-            const laneY  = laneYStart.get(fs?.lane_id) ?? TOP_PAD;
-            const minRow = Math.min(fp.lr ?? 0, tp.lr ?? 0);
-            // Arc Y sits just above the top of the relevant row (in the gap / header space)
+            const laneY   = laneYStart.get(fs?.lane_id) ?? TOP_PAD;
+            const minRow  = Math.min(fp.lr ?? 0, tp.lr ?? 0);
             const rowTopY = laneY + LANE_HDR + LANE_V_PAD + minRow * ROW_H - V_GAP * 0.5;
             const arcY    = Math.max(laneY + LANE_HDR + 6, rowTopY);
-            d        = `M${fp.cx},${fp.y} C${fp.cx},${arcY} ${tp.cx},${arcY} ${tp.cx},${tp.y - ARROW_LEN - 1}`;
-            stroke   = '#f59e0b';
-            markerId = 'aBack';
-            dash     = '6 3';
-            lx = (fp.cx + tp.cx) / 2;
-            ly = arcY - 12;
+            d         = `M${fp.cx},${fp.y} C${fp.cx},${arcY} ${tp.cx},${arcY} ${tp.cx},${tp.y - ARROW_LEN - 1}`;
+            dStraight = `M${fp.cx},${fp.y} L${fp.cx},${arcY} L${tp.cx},${arcY} L${tp.cx},${tp.y - ARROW_LEN - 1}`;
+            stroke    = '#f59e0b'; markerId = 'aBack'; dash = '6 3';
+            lx = (fp.cx + tp.cx) / 2; ly = arcY - 12;
 
         } else if (isWrap) {
-            // Natural row-wrap: clean L-shape along the right margin
-            // Right side → drop down → left to target  (like a typewriter carriage return)
-            const x1    = fp.cx + NODE_W / 2;
-            const x2    = tp.cx - NODE_W / 2 - ARROW_LEN - 1;
+            const x1     = fp.cx + NODE_W / 2;
+            const x2     = tp.cx - NODE_W / 2 - ARROW_LEN - 1;
             const rightM = totalW - RIGHT_PAD / 2 + 4;
-            const r      = 10; // corner radius
+            const r      = 10;
             d = `M${x1},${fp.cy}` +
-                ` L${rightM - r},${fp.cy} Q${rightM},${fp.cy} ${rightM},${fp.cy + r}` +
-                ` L${rightM},${tp.cy - r} Q${rightM},${tp.cy} ${rightM - r},${tp.cy}` +
+                ` L${rightM-r},${fp.cy} Q${rightM},${fp.cy} ${rightM},${fp.cy+r}` +
+                ` L${rightM},${tp.cy-r} Q${rightM},${tp.cy} ${rightM-r},${tp.cy}` +
                 ` L${x2},${tp.cy}`;
-            stroke   = '#64748b';
-            markerId = 'aFwd';
-            lx = rightM + 6;
-            ly = (fp.cy + tp.cy) / 2;
+            dStraight = `M${x1},${fp.cy} L${rightM},${fp.cy} L${rightM},${tp.cy} L${x2},${tp.cy}`;
+            stroke = '#64748b'; markerId = 'aFwd';
+            lx = rightM + 6; ly = (fp.cy + tp.cy) / 2;
 
         } else if (dropDown) {
-            // Cross-row branch: exit bottom of source, enter top of target
-            // Keeps the arrow within the column area rather than crossing nodes horizontally
-            const bx1 = fp.cx;
-            const by1 = fp.y + NODE_H;
-            const bx2 = tp.cx;
-            const by2 = tp.y - ARROW_LEN - 1;
+            const bx1 = fp.cx, by1 = fp.y + NODE_H;
+            const bx2 = tp.cx, by2 = tp.y - ARROW_LEN - 1;
             const mid = (by1 + by2) / 2;
-            d        = `M${bx1},${by1} C${bx1},${mid} ${bx2},${mid} ${bx2},${by2}`;
-            stroke   = '#64748b';
-            markerId = 'aFwd';
-            lx = bx1 + 8;
-            ly = mid;
+            d         = `M${bx1},${by1} C${bx1},${mid} ${bx2},${mid} ${bx2},${by2}`;
+            dStraight = `M${bx1},${by1} L${bx1},${mid} L${bx2},${mid} L${bx2},${by2}`;
+            stroke = '#64748b'; markerId = 'aFwd';
+            lx = bx1 + 8; ly = mid;
 
         } else if (isCross) {
-            // Cross-lane: route vertically. Direction depends on whether the
-            // target lane is above or below the source lane in the diagram.
             const laneYSrc = laneYStart.get(fs?.lane_id) ?? 0;
             const laneYTgt = laneYStart.get(ts?.lane_id) ?? 0;
             let bx1, by1, bx2, by2;
             if (laneYTgt >= laneYSrc) {
-                // Downward — exit bottom of source, enter top of target
                 bx1 = fp.cx; by1 = fp.y + NODE_H;
                 bx2 = tp.cx; by2 = tp.y - ARROW_LEN - 1;
             } else {
-                // Upward — exit top of source, enter bottom of target
-                // (marker tip lands exactly on the node bottom edge)
                 bx1 = fp.cx; by1 = fp.y;
                 bx2 = tp.cx; by2 = tp.y + NODE_H + ARROW_LEN;
             }
             const mid  = (by1 + by2) / 2;
-            d        = `M${bx1},${by1} C${bx1},${mid} ${bx2},${mid} ${bx2},${by2}`;
-            stroke   = '#3b82f6';
-            markerId = 'aCross';
-            lx = (bx1 + bx2) / 2 + 8;
-            ly = mid;
+            d         = `M${bx1},${by1} C${bx1},${mid} ${bx2},${mid} ${bx2},${by2}`;
+            dStraight = `M${bx1},${by1} L${bx1},${mid} L${bx2},${mid} L${bx2},${by2}`;
+            stroke = '#3b82f6'; markerId = 'aCross';
+            lx = (bx1 + bx2) / 2 + 8; ly = mid;
 
         } else {
-            // Forward same-row: horizontal S-curve
+            // Same-row forward — y1 === y2 so the bezier is already straight
             const x1 = fp.cx + NODE_W / 2, y1 = fp.cy;
             const x2 = tp.cx - NODE_W / 2 - ARROW_LEN - 1, y2 = tp.cy;
             const mx = (x1 + x2) / 2;
-            d        = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
-            stroke   = '#64748b';
-            markerId = 'aFwd';
+            d         = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+            dStraight = `M${x1},${y1} L${x2},${y2}`;
+            stroke = '#64748b'; markerId = 'aFwd';
             lx = fp.cx + (tp.cx - fp.cx) * 0.35;
             ly = Math.min(fp.y, tp.y) - 10;
         }
@@ -552,7 +535,7 @@ function renderSwimlane(data, canvasEl) {
             opacity:           0.8,
         });
         svg.appendChild(pathEl);
-        connEls.push({ from: conn.from, to: conn.to, pathEl, labelEls: [] });
+        connEls.push({ from: conn.from, to: conn.to, pathEl, labelEls: [], dCurved: d, dStraight });
 
         if (conn.label) {
             labelQueue.push({ lx, ly, text: conn.label, stroke, ci: connEls.length - 1 });
@@ -933,6 +916,33 @@ function fitToWrap() {
 document.getElementById('btnZoomIn') ?.addEventListener('click', () => applyZoom(zoom * 1.25));
 document.getElementById('btnZoomOut')?.addEventListener('click', () => applyZoom(zoom * 0.8));
 document.getElementById('btnFit')    ?.addEventListener('click', fitToWrap);
+
+// ── Connection style toggle (curved ↔ straight) ───────────────────────────────
+let connStyle = localStorage.getItem('asis-conn-style') || 'straight';
+
+function applyConnStyle(style) {
+    connStyle = style;
+    localStorage.setItem('asis-conn-style', style);
+    const btn = document.getElementById('btnConnStyle');
+    if (btn) {
+        btn.textContent = style === 'straight' ? 'Straight' : 'Curved';
+        btn.title = style === 'straight'
+            ? 'Switch to curved connections'
+            : 'Switch to straight connections';
+        btn.style.fontWeight = style === 'straight' ? '700' : '';
+    }
+    connEls.forEach(ce => {
+        ce.pathEl.setAttribute('d', style === 'straight' ? ce.dStraight : ce.dCurved);
+    });
+}
+
+document.getElementById('btnConnStyle')?.addEventListener('click', () => {
+    applyConnStyle(connStyle === 'curved' ? 'straight' : 'curved');
+});
+
+// Apply saved preference on load
+applyConnStyle(connStyle);
+
 document.getElementById('btnFull')?.addEventListener('click', () => {
     if (!document.fullscreenElement) wrap?.requestFullscreen?.();
     else document.exitFullscreen?.();

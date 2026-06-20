@@ -187,11 +187,12 @@ ob_start();
             <h2 class="landing-h2">What to expect</h2>
             <p>This is a working management system, not just a diagram viewer. Here is what you can do today:</p>
             <ul class="landing-checklist">
-                <li>Create and edit AS-IS documents with metadata (owner, department, version)</li>
-                <li>Build colour-coded swimlanes, steps, system links, and connections</li>
-                <li>View interactive swimlane diagrams with multi-row layout — no horizontal scrolling through 20 steps</li>
-                <li>Click any step to focus on it and its connections — see descriptions and linked systems instantly</li>
-                <li>Zoom, pan, and go full screen to explore even the most complex maps</li>
+                <li>Create a new map with a lane template — Housing repairs, Procurement, or your own — so lanes are ready instantly</li>
+                <li>Add steps with the next number pre-filled, clone similar steps in one click, and get prompted when connections are missing</li>
+                <li>Build colour-coded swimlanes with six step types including <strong>Subprocess</strong> and <strong>Parallel gateway</strong></li>
+                <li>View interactive diagrams with multi-row layout — even a 21-step process fits on screen</li>
+                <li>Click any step to focus on it and see its connections and descriptions in a card panel</li>
+                <li>Zoom, pan, and go full screen for workshops and presentations</li>
                 <li>Browse a shared systems library used across all maps</li>
                 <li>Load sample maps to explore before building your own</li>
             </ul>
