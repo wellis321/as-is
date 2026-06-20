@@ -248,34 +248,62 @@ function renderSwimlane(data, canvasEl) {
     if (!lanes.length || !steps.length) return null;
 
     // ── Layout constants ─────────────────────────────────────────
-    const LEFT_PAD  = 20;  // padding left of first node column
-    const RIGHT_PAD = 20;  // padding right of last node column
-    const LANE_HDR  = 28;  // header strip height at top of each lane (holds the label)
-    const NODE_W    = 152; // node width
-    const NODE_H    = 66;  // node height
-    const H_GAP     = 28;  // horizontal gap between columns
-    const LANE_H    = 168; // total lane band height (header + node area)
-    const TOP_PAD   = 52;  // room above first lane for loop-back arrows
-    const BOT_PAD   = 20;
+    const LEFT_PAD   = 20;  // left padding
+    const RIGHT_PAD  = 20;  // right padding
+    const LANE_HDR   = 28;  // header strip height at top of each lane
+    const LANE_V_PAD = 24;  // padding above and below node rows within a lane
+    const NODE_W     = 152; // node width
+    const NODE_H     = 66;  // node height
+    const H_GAP      = 28;  // horizontal gap between columns
+    const V_GAP      = 28;  // vertical gap between rows within a lane
+    const MAX_COLS   = 7;   // steps per row before wrapping to a new row
+    const TOP_PAD    = 52;  // space above all lanes (for loop-back arcs)
+    const BOT_PAD    = 20;
+    const ROW_H      = NODE_H + V_GAP; // height of one row of nodes (94px)
 
-    // Assign each unique step_number a column index (left to right)
-    const sortedNums = [...new Set(steps.map(s => s.step_number))].sort((a, b) => a - b);
-    const colOf      = new Map(sortedNums.map((n, i) => [n, i]));
-    const numCols    = sortedNums.length;
+    // ── Step layout: assign each step a (lane_row, lane_col) ─────
+    // Steps within each lane are sorted by step_number and arranged
+    // left-to-right, wrapping to a new row every MAX_COLS steps.
+    const stepLayout = new Map(); // step.id → { lane_row, lane_col }
+    const laneRows   = new Map(); // lane.id → number of rows used
 
-    const totalW = LEFT_PAD + numCols * NODE_W + (numCols - 1) * H_GAP + RIGHT_PAD;
-    const totalH = TOP_PAD + lanes.length * LANE_H + BOT_PAD;
+    lanes.forEach(lane => {
+        const laneSteps = steps
+            .filter(s => s.lane_id === lane.id)
+            .sort((a, b) => a.step_number - b.step_number);
+        const nr = Math.max(1, Math.ceil(laneSteps.length / MAX_COLS));
+        laneRows.set(lane.id, nr);
+        laneSteps.forEach((s, i) => {
+            stepLayout.set(s.id, {
+                lane_row: Math.floor(i / MAX_COLS),
+                lane_col: i % MAX_COLS,
+            });
+        });
+    });
 
-    const laneIdxOf = new Map(lanes.map((l, i) => [l.id, i]));
+    // Lane heights vary based on the number of rows each lane needs
+    // height = header + top-pad + rows*NODE_H + (rows-1)*V_GAP + bot-pad
+    const laneHeight = lane =>
+        LANE_HDR + LANE_V_PAD + (laneRows.get(lane.id) || 1) * NODE_H
+        + ((laneRows.get(lane.id) || 1) - 1) * V_GAP + LANE_V_PAD;
 
-    // Centre of each step node — vertically centred in the area below the header strip
+    // Cumulative Y start for each lane
+    const laneYStart = new Map();
+    let _y = TOP_PAD;
+    lanes.forEach(lane => { laneYStart.set(lane.id, _y); _y += laneHeight(lane); });
+
+    const totalW = LEFT_PAD + MAX_COLS * NODE_W + (MAX_COLS - 1) * H_GAP + RIGHT_PAD;
+    const totalH = _y + BOT_PAD;
+
+    // ── Step centre positions ─────────────────────────────────────
     const pos = new Map();
     steps.forEach(s => {
-        const col = colOf.get(s.step_number) ?? 0;
-        const li  = laneIdxOf.get(s.lane_id) ?? 0;
-        const cx  = LEFT_PAD + col * (NODE_W + H_GAP) + NODE_W / 2;
-        const cy  = TOP_PAD + li * LANE_H + LANE_HDR + (LANE_H - LANE_HDR) / 2;
-        pos.set(s.id, { cx, cy, x: cx - NODE_W / 2, y: cy - NODE_H / 2 });
+        const sp   = stepLayout.get(s.id) || { lane_row: 0, lane_col: 0 };
+        const yBase = laneYStart.get(s.lane_id) || 0;
+        const cx   = LEFT_PAD + sp.lane_col * (NODE_W + H_GAP) + NODE_W / 2;
+        const cy   = yBase + LANE_HDR + LANE_V_PAD + sp.lane_row * ROW_H + NODE_H / 2;
+        pos.set(s.id, { cx, cy, x: cx - NODE_W / 2, y: cy - NODE_H / 2,
+                         lr: sp.lane_row, lc: sp.lane_col });
     });
 
     // ── Colour palettes ──────────────────────────────────────────
@@ -356,43 +384,52 @@ function renderSwimlane(data, canvasEl) {
     svg.appendChild(defs);
 
     // ── Lane bands ────────────────────────────────────────────────
-    // Each band has a tinted fill + a LANE_HDR-tall header strip at the top that
-    // carries the lane name in large readable text — visible at any zoom level.
+    // Each lane has a variable height based on its row count.
     lanes.forEach((lane, i) => {
         const { fill, stroke } = parseLaneColor(lane.color, i);
-        const y = TOP_PAD + i * LANE_H;
+        const y  = laneYStart.get(lane.id) || 0;
+        const lh = laneHeight(lane);
 
-        // Full band background
-        svg.appendChild(el('rect', { x:0, y, width:totalW, height:LANE_H, fill }));
-
-        // Header strip — slightly more opaque tint of the lane colour
         const hr = parseInt(stroke.slice(1,3), 16);
         const hg = parseInt(stroke.slice(3,5), 16);
         const hb = parseInt(stroke.slice(5,7), 16);
+
+        // Full band background
+        svg.appendChild(el('rect', { x:0, y, width:totalW, height:lh, fill }));
+
+        // Header strip
         svg.appendChild(el('rect', {
             x:0, y, width:totalW, height:LANE_HDR,
             fill: `rgba(${hr},${hg},${hb},0.13)`,
         }));
-
-        // Separator between header and node area
         svg.appendChild(el('line', {
             x1:0, y1:y+LANE_HDR, x2:totalW, y2:y+LANE_HDR,
             stroke:`rgba(${hr},${hg},${hb},0.25)`, 'stroke-width':1,
         }));
 
+        // Row separators (subtle dashed lines between rows within a lane)
+        const nr = laneRows.get(lane.id) || 1;
+        for (let r = 1; r < nr; r++) {
+            const ry = y + LANE_HDR + LANE_V_PAD + r * ROW_H - V_GAP / 2;
+            svg.appendChild(el('line', {
+                x1: LEFT_PAD, y1: ry, x2: totalW - RIGHT_PAD, y2: ry,
+                stroke: `rgba(${hr},${hg},${hb},0.18)`,
+                'stroke-width': 1, 'stroke-dasharray': '4 4',
+            }));
+        }
+
         // Bottom band separator
         svg.appendChild(el('line', {
-            x1:0, y1:y+LANE_H, x2:totalW, y2:y+LANE_H,
+            x1:0, y1:y+lh, x2:totalW, y2:y+lh,
             stroke:'#d1d5db', 'stroke-width':1,
         }));
 
-        // Lane name — left-aligned inside the header strip, large and readable
+        // Lane name in header
         const lbl = el('text', {
             x: LEFT_PAD, y: y + LANE_HDR / 2,
             'text-anchor': 'start', 'dominant-baseline': 'middle',
             'font-family': "'IBM Plex Serif', Georgia, serif",
-            'font-size': 14, 'font-weight': 600,
-            'letter-spacing': '0.01em',
+            'font-size': 14, 'font-weight': 600, 'letter-spacing': '0.01em',
             fill: stroke,
         });
         lbl.textContent = lane.name;
@@ -400,66 +437,129 @@ function renderSwimlane(data, canvasEl) {
     });
 
     // ── Connections (paths drawn before nodes; labels queued for after) ──
-    const stepById  = new Map(steps.map(s => [s.id, s]));
+    const stepById   = new Map(steps.map(s => [s.id, s]));
     const labelQueue = []; // filled during connection loop, rendered after nodes
+    const connEls    = []; // { from, to, pathEl, labelEls[] } — for highlight
 
     connections.forEach(conn => {
         const fp = pos.get(conn.from);
         const tp = pos.get(conn.to);
         if (!fp || !tp) return;
 
-        const fs      = stepById.get(conn.from);
-        const ts      = stepById.get(conn.to);
-        const isBack  = fp.cx > tp.cx + 4;
-        const isCross = !isBack && fs && ts && fs.lane_id !== ts.lane_id;
+        const fs  = stepById.get(conn.from);
+        const ts  = stepById.get(conn.to);
+
+        const sameLane = fs && ts && fs.lane_id === ts.lane_id;
+        const sameRow  = sameLane && fp.lr === tp.lr;
+        const dropDown = sameLane && fp.lr < tp.lr;
+        const loopUp   = sameLane && fp.lr > tp.lr;
+        // isBack only applies within the same lane — cross-lane connections
+        // are always forward flow, never backward arcs.
+        const isBack  = (sameRow && fp.cx > tp.cx + 4) || loopUp;
+        const isCross = !isBack && !sameLane;
+        const isWrap  = dropDown && tp.lc < fp.lc;
 
         let d, stroke, markerId, dash = null;
-
-        // The stroke ends at the path endpoint; the arrowhead body starts there
-        // (refX=0) and its tip lands 1px outside the node boundary.
-        // ARROW_LEN must equal the marker's markerWidth above.
+        let lx, ly; // label position
         const ARROW_LEN = 10;
 
         if (isBack) {
-            const arcY = TOP_PAD / 2;
-            d         = `M${fp.cx},${fp.y} C${fp.cx},${arcY} ${tp.cx},${arcY} ${tp.cx},${tp.y - ARROW_LEN - 1}`;
-            stroke    = '#f59e0b';
-            markerId  = 'aBack';
-            dash      = '6 3';
+            // Loop-back / backward: amber dashed arc above the earlier row
+            const laneY  = laneYStart.get(fs?.lane_id) ?? TOP_PAD;
+            const minRow = Math.min(fp.lr ?? 0, tp.lr ?? 0);
+            // Arc Y sits just above the top of the relevant row (in the gap / header space)
+            const rowTopY = laneY + LANE_HDR + LANE_V_PAD + minRow * ROW_H - V_GAP * 0.5;
+            const arcY    = Math.max(laneY + LANE_HDR + 6, rowTopY);
+            d        = `M${fp.cx},${fp.y} C${fp.cx},${arcY} ${tp.cx},${arcY} ${tp.cx},${tp.y - ARROW_LEN - 1}`;
+            stroke   = '#f59e0b';
+            markerId = 'aBack';
+            dash     = '6 3';
+            lx = (fp.cx + tp.cx) / 2;
+            ly = arcY - 12;
+
+        } else if (isWrap) {
+            // Natural row-wrap: clean L-shape along the right margin
+            // Right side → drop down → left to target  (like a typewriter carriage return)
+            const x1    = fp.cx + NODE_W / 2;
+            const x2    = tp.cx - NODE_W / 2 - ARROW_LEN - 1;
+            const rightM = totalW - RIGHT_PAD / 2 + 4;
+            const r      = 10; // corner radius
+            d = `M${x1},${fp.cy}` +
+                ` L${rightM - r},${fp.cy} Q${rightM},${fp.cy} ${rightM},${fp.cy + r}` +
+                ` L${rightM},${tp.cy - r} Q${rightM},${tp.cy} ${rightM - r},${tp.cy}` +
+                ` L${x2},${tp.cy}`;
+            stroke   = '#64748b';
+            markerId = 'aFwd';
+            lx = rightM + 6;
+            ly = (fp.cy + tp.cy) / 2;
+
+        } else if (dropDown) {
+            // Cross-row branch: exit bottom of source, enter top of target
+            // Keeps the arrow within the column area rather than crossing nodes horizontally
+            const bx1 = fp.cx;
+            const by1 = fp.y + NODE_H;
+            const bx2 = tp.cx;
+            const by2 = tp.y - ARROW_LEN - 1;
+            const mid = (by1 + by2) / 2;
+            d        = `M${bx1},${by1} C${bx1},${mid} ${bx2},${mid} ${bx2},${by2}`;
+            stroke   = '#64748b';
+            markerId = 'aFwd';
+            lx = bx1 + 8;
+            ly = mid;
+
+        } else if (isCross) {
+            // Cross-lane: route vertically. Direction depends on whether the
+            // target lane is above or below the source lane in the diagram.
+            const laneYSrc = laneYStart.get(fs?.lane_id) ?? 0;
+            const laneYTgt = laneYStart.get(ts?.lane_id) ?? 0;
+            let bx1, by1, bx2, by2;
+            if (laneYTgt >= laneYSrc) {
+                // Downward — exit bottom of source, enter top of target
+                bx1 = fp.cx; by1 = fp.y + NODE_H;
+                bx2 = tp.cx; by2 = tp.y - ARROW_LEN - 1;
+            } else {
+                // Upward — exit top of source, enter bottom of target
+                // (marker tip lands exactly on the node bottom edge)
+                bx1 = fp.cx; by1 = fp.y;
+                bx2 = tp.cx; by2 = tp.y + NODE_H + ARROW_LEN;
+            }
+            const mid  = (by1 + by2) / 2;
+            d        = `M${bx1},${by1} C${bx1},${mid} ${bx2},${mid} ${bx2},${by2}`;
+            stroke   = '#3b82f6';
+            markerId = 'aCross';
+            lx = (bx1 + bx2) / 2 + 8;
+            ly = mid;
+
         } else {
+            // Forward same-row: horizontal S-curve
             const x1 = fp.cx + NODE_W / 2, y1 = fp.cy;
             const x2 = tp.cx - NODE_W / 2 - ARROW_LEN - 1, y2 = tp.cy;
-            const mx  = (x1 + x2) / 2;
+            const mx = (x1 + x2) / 2;
             d        = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
-            stroke   = isCross ? '#3b82f6' : '#64748b';
-            markerId = isCross ? 'aCross'  : 'aFwd';
+            stroke   = '#64748b';
+            markerId = 'aFwd';
+            lx = fp.cx + (tp.cx - fp.cx) * 0.35;
+            ly = Math.min(fp.y, tp.y) - 10;
         }
 
-        svg.appendChild(el('path', {
+        const pathEl = el('path', {
             d, fill:'none', stroke,
-            'stroke-width':    isCross ? 2 : 1.5,
+            'stroke-width':    (isCross || isWrap || dropDown) ? 2 : 1.5,
             'stroke-dasharray': dash,
             'marker-end':      `url(#${markerId})`,
-            opacity:           0.75,
-        }));
+            opacity:           0.8,
+        });
+        svg.appendChild(pathEl);
+        connEls.push({ from: conn.from, to: conn.to, pathEl, labelEls: [] });
 
-        // Queue labels for a second pass — drawn after nodes so they
-        // always appear on top, even for long connections whose midpoint
-        // falls over an intermediate step.
         if (conn.label) {
-            // x: 35% of the way from source to target — near where the label branch leaves
-            const lx = fp.cx + (tp.cx - fp.cx) * 0.35;
-            // y: 10px above the top edge of the highest node involved
-            //    fp.y / tp.y are the node top edges (cy - NODE_H/2)
-            const ly = isBack
-                ? TOP_PAD / 2 - 14
-                : Math.min(fp.y, tp.y) - 10;
-            labelQueue.push({ lx, ly, text: conn.label, stroke });
+            labelQueue.push({ lx, ly, text: conn.label, stroke, ci: connEls.length - 1 });
         }
     });
 
     // ── Step nodes ────────────────────────────────────────────────
     const clickHandlers = [];
+    const nodeGroups    = new Map(); // step.id → SVG <g> element
 
     steps.forEach(step => {
         const p = pos.get(step.id);
@@ -540,24 +640,30 @@ function renderSwimlane(data, canvasEl) {
         }
 
         svg.appendChild(g);
+        nodeGroups.set(step.id, g);
         clickHandlers.push({ el: g, step });
     });
 
     // ── Connection labels (rendered last so they sit above all nodes) ────
-    labelQueue.forEach(({ lx, ly, text, stroke }) => {
+    labelQueue.forEach(({ lx, ly, text, stroke, ci }) => {
         const lw = text.length * 6.2 + 14;
-        svg.appendChild(el('rect', {
+        const rectEl = el('rect', {
             x: lx - lw / 2, y: ly - 9, width: lw, height: 17,
             rx: 3, fill: 'white', stroke, 'stroke-width': 0.5, opacity: 0.92,
-        }));
-        svg.appendChild(txt(lx, ly, text, {
-            'font-family': 'Segoe UI,system-ui,sans-serif',
+        });
+        const textEl = txt(lx, ly, text, {
+            'font-family': "'IBM Plex Sans',system-ui,sans-serif",
             'font-size': 10, fill: stroke, 'font-weight': 500,
-        }));
+        });
+        svg.appendChild(rectEl);
+        svg.appendChild(textEl);
+        if (ci !== undefined && connEls[ci]) {
+            connEls[ci].labelEls.push(rectEl, textEl);
+        }
     });
 
     canvasEl.appendChild(svg);
-    return { svg, clickHandlers };
+    return { svg, clickHandlers, nodeGroups, connEls };
 }
 
 // ── Hardcoded Lucide icon paths for diagram nodes ─────────────────────────────
@@ -596,7 +702,7 @@ if (!data.steps || !data.steps.length) return;
 const result = renderSwimlane(data, canvas);
 if (!result) return;
 
-const { svg, clickHandlers } = result;
+const { svg, clickHandlers, nodeGroups, connEls } = result;
 
 // Escape HTML for safe innerHTML use
 const esc = s => String(s)
@@ -610,56 +716,139 @@ const ACTION_LABELS = {
     escalation:'Escalation', general:'',
 };
 
-// Step click → floating detail panel
+// Stroke colours for action type icons in the popup (matches ACTION_COL in renderer)
+const ACTION_ICON_COLORS = {
+    phone:'#f59e0b', document:'#3b82f6', email:'#10b981', letter:'#0284c7',
+    wait:'#94a3b8', meeting:'#a855f7', 'data-entry':'#6366f1', check:'#22c55e',
+    escalation:'#f43f5e', automated:'#64748b', 'api-call':'#0891b2',
+    notification:'#ea580c', visit:'#0d9488', payment:'#be185d', report:'#92400e',
+};
+
+function popupIconHtml(actionType) {
+    const paths = ACTION_ICON_NODES[actionType];
+    const color  = ACTION_ICON_COLORS[actionType];
+    if (!paths || !color) return '';
+    const pHtml = paths.map(d => `<path d="${d}"/>`).join('');
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+        stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        style="flex-shrink:0;vertical-align:middle">${pHtml}</svg>`;
+}
+
+// ── Focus highlight ───────────────────────────────────────────────────────────
+let activeStepId = null;
+
+function applyHighlight(stepId) {
+    activeStepId = stepId;
+    const related = new Set([stepId]);
+    connEls.forEach(({ from, to }) => {
+        if (from === stepId) related.add(to);
+        if (to   === stepId) related.add(from);
+    });
+    nodeGroups.forEach((g, id) => {
+        if (related.has(id)) { g.style.opacity = '1';    g.style.filter = ''; }
+        else                  { g.style.opacity = '0.12'; g.style.filter = 'grayscale(100%)'; }
+    });
+    connEls.forEach(({ from, to, pathEl, labelEls }) => {
+        const active = from === stepId || to === stepId;
+        pathEl.style.opacity = active ? '0.9' : '0.06';
+        labelEls.forEach(el => { el.style.opacity = active ? '1' : '0'; });
+    });
+    return related;
+}
+
+function clearHighlight() {
+    activeStepId = null;
+    nodeGroups.forEach(g => { g.style.opacity = ''; g.style.filter = ''; });
+    connEls.forEach(({ pathEl, labelEls }) => {
+        pathEl.style.opacity = '';
+        labelEls.forEach(el => { el.style.opacity = ''; });
+    });
+}
+
+// Render a single step as a compact card row
+function stepCardHtml(s, isLast) {
+    const sys = s.systems
+        ? s.systems.split(', ').map(t => `<span class="sys-tag">${esc(t.trim())}</span>`).join(' ')
+        : '';
+    const lbl  = ACTION_LABELS[s.action_type] || '';
+    const icon = popupIconHtml(s.action_type);
+    return `<div style="display:flex;gap:0.55rem;align-items:flex-start;
+                        padding:0.55rem 0;${isLast ? '' : 'border-bottom:1px solid var(--border);'}">
+        <span style="font-size:0.68rem;font-weight:700;background:#e2e8f0;color:#475569;
+                     border-radius:3px;padding:0.1rem 0.3rem;flex-shrink:0;margin-top:0.15rem;">
+            ${s.step_number}</span>
+        <div>
+            <div style="font-weight:600;font-size:0.82rem;line-height:1.3;">${esc(s.title)}</div>
+            ${s.description ? `<p style="margin:0.2rem 0 0;color:var(--muted);font-size:0.76rem;line-height:1.4;">${esc(s.description)}</p>` : ''}
+            ${lbl || sys ? `<div style="margin-top:0.3rem;display:flex;flex-wrap:wrap;gap:0.25rem;align-items:center;">
+                ${lbl ? `<span class="badge" style="display:inline-flex;gap:0.25rem;align-items:center;font-size:0.7rem;">${icon}${esc(lbl)}</span>` : ''}
+                ${sys}
+            </div>` : ''}
+        </div>
+    </div>`;
+}
+
+// Step click → highlight + multi-step card list
 clickHandlers.forEach(({ el: g, step }) => {
     g.addEventListener('click', e => {
-        if (!detail || !wrap) return;
+        if (!wrap) return;
         e.stopPropagation();
 
-        const sysHtml = step.systems
-            ? step.systems.split(', ').map(s => `<span class="sys-tag">${esc(s.trim())}</span>`).join(' ')
-            : '';
-        const actionLabel = ACTION_LABELS[step.action_type] || '';
-        detail.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem;">
-                <div>
-                    <strong style="font-size:0.9rem;">${esc(step.step_number + '. ' + step.title)}</strong>
-                    ${step.description ? `<p style="margin:0.35rem 0 0;color:var(--muted);line-height:1.45;">${esc(step.description)}</p>` : ''}
-                    <div style="margin-top:0.5rem;display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center;">
-                        ${actionLabel ? `<span class="badge">${esc(actionLabel)}</span>` : ''}
-                        ${sysHtml}
-                    </div>
-                </div>
-                <button id="closeDetail" style="background:none;border:none;cursor:pointer;
-                        font-size:1.2rem;color:var(--muted);padding:0;line-height:1;flex-shrink:0;">&#215;</button>
-            </div>`;
+        if (activeStepId === step.id) {
+            clearHighlight();
+            if (detail) detail.hidden = true;
+            return;
+        }
+        const related = applyHighlight(step.id);
 
-        // Position near the click point, clamped inside the wrap
-        const wrapRect = wrap.getBoundingClientRect();
-        const PANEL_W = 300, PANEL_H = 130; // approximate
-        let px = e.clientX - wrapRect.left + wrap.scrollLeft + 14;
-        let py = e.clientY - wrapRect.top  + wrap.scrollTop  + 14;
-        // Flip left if it would overflow right edge
-        if (px + PANEL_W > wrap.scrollLeft + wrap.clientWidth - 10) {
-            px = (e.clientX - wrapRect.left + wrap.scrollLeft) - PANEL_W - 14;
-        }
-        // Flip up if it would overflow bottom
-        if (py + PANEL_H > wrap.scrollTop + wrap.clientHeight - 10) {
-            py = (e.clientY - wrapRect.top + wrap.scrollTop) - PANEL_H - 14;
-        }
-        detail.style.left = Math.max(wrap.scrollLeft + 6, px) + 'px';
-        detail.style.top  = Math.max(wrap.scrollTop  + 6, py) + 'px';
+        if (!detail) return;
+
+        // Gather all related steps, sorted by step_number
+        const relSteps = data.steps
+            .filter(s => related.has(s.id))
+            .sort((a, b) => a.step_number - b.step_number);
+
+        const count = relSteps.length;
+        const cards = relSteps.map((s, i) => stepCardHtml(s, i === count - 1)).join('');
+
+        detail.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                        padding-bottom:0.45rem;margin-bottom:0.1rem;
+                        border-bottom:2px solid var(--border);">
+                <span style="font-size:0.7rem;font-weight:700;color:var(--muted);
+                             text-transform:uppercase;letter-spacing:0.06em;">
+                    ${count} step${count !== 1 ? 's' : ''} in focus</span>
+                <button id="closeDetail" style="background:none;border:none;cursor:pointer;
+                        font-size:1.2rem;color:var(--muted);padding:0;line-height:1;">&#215;</button>
+            </div>
+            <div style="overflow-y:auto;max-height:340px;">${cards}</div>`;
+
+        // Opposite-corner positioning so the panel never covers the mini-flow
+        const wrapRect   = wrap.getBoundingClientRect();
+        const PANEL_W    = 310;
+        const clickFracX = (e.clientX - wrapRect.left) / wrap.clientWidth;
+        const clickFracY = (e.clientY - wrapRect.top)  / wrap.clientHeight;
+        const px = clickFracX > 0.5
+            ? wrap.scrollLeft + 12
+            : wrap.scrollLeft + wrap.clientWidth - PANEL_W - 12;
+        const py = clickFracY > 0.5
+            ? wrap.scrollTop  + 12
+            : wrap.scrollTop  + wrap.clientHeight - 380 - 12;
+        detail.style.left  = Math.max(wrap.scrollLeft + 6, px) + 'px';
+        detail.style.top   = Math.max(wrap.scrollTop  + 6, py) + 'px';
+        detail.style.width = PANEL_W + 'px';
         detail.hidden = false;
 
         document.getElementById('closeDetail')
-            ?.addEventListener('click', () => { detail.hidden = true; });
+            ?.addEventListener('click', () => { detail.hidden = true; clearHighlight(); });
     });
 });
 
-// Click on diagram background → dismiss panel
+// Click on background → dismiss panel and clear highlight
 wrap?.addEventListener('click', e => {
     if (e.target === wrap || e.target.closest('#swimlane-canvas svg')) {
         if (detail) detail.hidden = true;
+        clearHighlight();
     }
 });
 
@@ -688,6 +877,10 @@ document.getElementById('btnFull')   ?.addEventListener('click', () => {
     if (!document.fullscreenElement) wrap?.requestFullscreen?.();
     else document.exitFullscreen?.();
 });
+
+// Wheel events inside the detail panel should scroll the card list, not zoom.
+// Stop propagation here so the event never reaches the wrap's zoom handler.
+detail?.addEventListener('wheel', e => { e.stopPropagation(); }, { passive: true });
 
 // Scroll wheel → zoom, centred on the cursor position.
 wrap?.addEventListener('wheel', e => {
