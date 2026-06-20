@@ -140,6 +140,16 @@ endif;
 
     <!-- SVG canvas + floating step detail -->
     <div class="diagram-wrap" id="diagramWrap" style="border:none;border-radius:0;padding:0;position:relative;">
+        <button id="btnExitFull"
+                onclick="document.exitFullscreen?.()"
+                style="display:none;position:absolute;top:0.75rem;right:0.75rem;z-index:300;
+                       align-items:center;gap:0.4rem;
+                       background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:6px;
+                       padding:0.45rem 0.8rem;font-size:0.8rem;font-weight:600;
+                       font-family:var(--f-sans);cursor:pointer;backdrop-filter:blur(4px);">
+            <i data-lucide="minimize" style="width:14px;height:14px;"></i>
+            Exit full screen
+        </button>
         <div id="swimlane-canvas"></div>
         <div id="step-detail" hidden
              style="position:absolute;z-index:200;
@@ -260,24 +270,97 @@ function renderSwimlane(data, canvasEl) {
     const BOT_PAD    = 20;
     const ROW_H      = NODE_H + V_GAP; // height of one row of nodes (110px)
 
-    // ── Step layout: assign each step a (lane_row, lane_col) ─────
-    // Steps within each lane are sorted by step_number and arranged
-    // left-to-right, wrapping to a new row every MAX_COLS steps.
+    // ── Step layout: graph-aware BFS per lane ────────────────────────────────
+    // Follows the actual connection flow rather than step_number order.
+    // At decision steps with multiple outgoing paths, each branch gets its own
+    // row — the branch with the most steps reachable stays on the primary row,
+    // exception/short branches drop to rows below.
     const stepLayout = new Map(); // step.id → { lane_row, lane_col }
     const laneRows   = new Map(); // lane.id → number of rows used
 
+    const laneStepsOf = new Map(lanes.map(l => [l.id, []]));
+    steps.forEach(s => laneStepsOf.get(s.lane_id)?.push(s));
+
     lanes.forEach(lane => {
-        const laneSteps = steps
-            .filter(s => s.lane_id === lane.id)
-            .sort((a, b) => a.step_number - b.step_number);
-        const nr = Math.max(1, Math.ceil(laneSteps.length / MAX_COLS));
-        laneRows.set(lane.id, nr);
-        laneSteps.forEach((s, i) => {
-            stepLayout.set(s.id, {
-                lane_row: Math.floor(i / MAX_COLS),
-                lane_col: i % MAX_COLS,
-            });
+        const ls    = (laneStepsOf.get(lane.id) || []).sort((a, b) => a.step_number - b.step_number);
+        const lsIds = new Set(ls.map(s => s.id));
+
+        // Within-lane adjacency
+        const outEdges = new Map(ls.map(s => [s.id, []]));
+        const inCount  = new Map(ls.map(s => [s.id, 0]));
+        connections.forEach(c => {
+            if (lsIds.has(c.from) && lsIds.has(c.to)) {
+                outEdges.get(c.from).push(c.to);
+                inCount.set(c.to, (inCount.get(c.to) ?? 0) + 1);
+            }
         });
+
+        // Count steps reachable within this lane from a given step.
+        // Used to identify the "primary" branch (most steps = main flow).
+        const reach = startId => {
+            const visited = new Set(), stack = [startId];
+            while (stack.length) {
+                const id = stack.pop();
+                if (visited.has(id)) continue;
+                visited.add(id);
+                (outEdges.get(id) || []).forEach(n => stack.push(n));
+            }
+            return visited.size;
+        };
+
+        // BFS layout — place each root's subtree before starting the next root
+        const assigned   = new Map(); // step.id → { lane_row, lane_col }
+        const rowNextCol = new Map(); // row → next free column in that row
+
+        // Sort roots by step_number so the primary flow (lowest number) goes first
+        const roots = ls
+            .filter(s => (inCount.get(s.id) ?? 0) === 0)
+            .sort((a, b) => a.step_number - b.step_number);
+
+        // Process each root's full subtree before moving to the next root.
+        // This prevents cross-lane entry points from interleaving with the main flow.
+        roots.forEach(root => {
+            const queue = [{ id: root.id, row: 0, col: rowNextCol.get(0) ?? 0 }];
+
+            while (queue.length > 0) {
+                const { id, row, col } = queue.shift();
+                if (assigned.has(id)) continue;
+
+                const actualCol = Math.max(col, rowNextCol.get(row) ?? 0);
+                assigned.set(id, { lane_row: row, lane_col: actualCol });
+                rowNextCol.set(row, actualCol + 1);
+
+                // Sort outgoing: most-reachable first → that branch stays on the same row
+                const outs = (outEdges.get(id) || [])
+                    .slice()
+                    .sort((a, b) => reach(b) - reach(a));
+
+                outs.forEach((nextId, i) => {
+                    if (!assigned.has(nextId)) {
+                        queue.push({
+                            id:  nextId,
+                            row: row + i,       // primary (i=0): same row; branches: +1, +2…
+                            col: actualCol + 1,
+                        });
+                    }
+                });
+            }
+        });
+
+        // Fallback: place any unvisited steps (disconnected or pure cycles) at the end
+        let maxAssignedRow = [...assigned.values()].reduce((m, v) => Math.max(m, v.lane_row), 0);
+        ls.forEach(s => {
+            if (!assigned.has(s.id)) {
+                const fbRow = maxAssignedRow + 1;
+                const fbCol = rowNextCol.get(fbRow) ?? 0;
+                assigned.set(s.id, { lane_row: fbRow, lane_col: fbCol });
+                rowNextCol.set(fbRow, fbCol + 1);
+            }
+        });
+
+        const numRows = [...assigned.values()].reduce((m, v) => Math.max(m, v.lane_row), 0) + 1;
+        laneRows.set(lane.id, numRows);
+        assigned.forEach((pos, stepId) => stepLayout.set(stepId, pos));
     });
 
     // Lane heights vary based on the number of rows each lane needs
@@ -291,7 +374,9 @@ function renderSwimlane(data, canvasEl) {
     let _y = TOP_PAD;
     lanes.forEach(lane => { laneYStart.set(lane.id, _y); _y += laneHeight(lane); });
 
-    const totalW = LEFT_PAD + MAX_COLS * NODE_W + (MAX_COLS - 1) * H_GAP + RIGHT_PAD;
+    // Width based on actual columns used — BFS layout may exceed MAX_COLS
+    const maxCol = [...stepLayout.values()].reduce((m, v) => Math.max(m, v.lane_col), 0);
+    const totalW = LEFT_PAD + (maxCol + 1) * NODE_W + maxCol * H_GAP + RIGHT_PAD;
     const totalH = _y + BOT_PAD;
 
     // ── Step centre positions ─────────────────────────────────────
@@ -962,10 +1047,17 @@ function fitToScreen() {
 }
 
 document.addEventListener('fullscreenchange', () => {
-    // Wait one frame so the browser has applied the new viewport dimensions.
     requestAnimationFrame(() => {
-        if (document.fullscreenElement) fitToScreen();
+        const inFull = !!document.fullscreenElement;
+        if (inFull) fitToScreen();
         else fitToWrap();
+        // Update toolbar button label
+        const btnFull = document.getElementById('btnFull');
+        if (btnFull) btnFull.textContent = inFull ? 'Exit full screen' : 'Full screen';
+        // Initialise Lucide icon in the exit button if entering fullscreen
+        if (inFull && typeof lucide !== 'undefined') {
+            lucide.createIcons({ nodes: [document.getElementById('btnExitFull')] });
+        }
     });
 });
 

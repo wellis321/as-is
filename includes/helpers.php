@@ -228,6 +228,14 @@ function ensure_schema(PDO $pdo): void
     ensure_global_systems($pdo);
     ensure_system_metadata($pdo);
     ensure_subprocess_types($pdo);
+    ensure_notif_check_column($pdo);
+}
+
+function ensure_notif_check_column(PDO $pdo): void
+{
+    $col = $pdo->query("SHOW COLUMNS FROM users LIKE 'last_notif_check'")->fetch();
+    if ($col) return;
+    $pdo->exec("ALTER TABLE users ADD COLUMN last_notif_check DATETIME NULL DEFAULT NULL");
 }
 
 function ensure_subprocess_types(PDO $pdo): void
@@ -2020,6 +2028,8 @@ function render_layout(string $title, string $content, array $options = []): voi
         .diagram-wrap svg { max-width: none !important; display: block; }
         .diagram-wrap:-webkit-full-screen { background: white; width: 100vw; height: 100vh; max-height: 100vh; padding: 1rem; overflow: auto; }
         .diagram-wrap:fullscreen           { background: white; width: 100vw; height: 100vh; max-height: 100vh; padding: 1rem; overflow: auto; }
+        .diagram-wrap:-webkit-full-screen #btnExitFull { display: flex !important; }
+        .diagram-wrap:fullscreen           #btnExitFull { display: flex !important; }
 
         .diagram-toolbar {
             display: flex;
@@ -2129,6 +2139,54 @@ function render_layout(string $title, string $content, array $options = []): voi
     $__loggedIn = function_exists('is_logged_in') && is_logged_in();
     $__canEdit  = $__loggedIn && function_exists('can_edit_maps') && can_edit_maps();
     $__isAdmin  = $__loggedIn && function_exists('user_has_min_role') && user_has_min_role('admin');
+
+    // ── Admin notifications ───────────────────────────────────────────────────
+    $__notifs = [];
+    if ($__isAdmin) {
+        $__userId = (int) ($_SESSION['user_id'] ?? 0);
+        try {
+            $__pdo = db();
+
+            // Ensure the column exists (runs once, idempotent)
+            ensure_notif_check_column($__pdo);
+
+            // Get this admin's last check time; default to their account creation
+            $__lastCheck = null;
+            if ($__userId > 0) {
+                $__row = auth_db()->prepare('SELECT last_notif_check, created_at FROM users WHERE id = ?');
+                $__row->execute([$__userId]);
+                $__user = $__row->fetch();
+                if ($__user) {
+                    $__lastCheck = $__user['last_notif_check'] ?? $__user['created_at'];
+                    // First-ever check: set baseline to now so old items don't flood
+                    if ($__user['last_notif_check'] === null) {
+                        auth_db()->prepare('UPDATE users SET last_notif_check = NOW() WHERE id = ?')
+                            ->execute([$__userId]);
+                        $__lastCheck = null; // nothing to show on very first load
+                    }
+                }
+            }
+
+            if ($__lastCheck !== null) {
+                // New feedback since last check
+                try {
+                    $__fbStmt = $__pdo->prepare('SELECT COUNT(*) FROM feedback WHERE created_at > ?');
+                    $__fbStmt->execute([$__lastCheck]);
+                    $__fbCount = (int) $__fbStmt->fetchColumn();
+                    if ($__fbCount > 0) {
+                        $__notifs[] = [
+                            'icon'  => 'message-square',
+                            'color' => '#d97706',
+                            'text'  => $__fbCount === 1
+                                ? '1 new feedback submission'
+                                : $__fbCount . ' new feedback submissions',
+                            'link'  => '/feedback-view.php',
+                        ];
+                    }
+                } catch (Throwable) {}
+            }
+        } catch (Throwable) {}
+    }
     ?>
 
     <!-- Research notice -->
@@ -2138,6 +2196,35 @@ function render_layout(string $title, string $content, array $options = []): voi
         </svg>
         <span><strong>Research &amp; Learning Resource</strong> — This is a demonstration system built for research and learning purposes. It is not the official East Renfrewshire Council AS-IS tool.</span>
     </div>
+
+    <?php if ($__notifs): ?>
+    <!-- Admin notification bar -->
+    <div style="background:#fffbeb;border-bottom:1px solid #fcd34d;padding:0.55rem 1.5rem;
+                display:flex;justify-content:space-between;align-items:center;gap:1rem;
+                font-size:0.82rem;color:#78350f;">
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+            <i data-lucide="bell" style="width:14px;height:14px;color:#d97706;flex-shrink:0;"></i>
+            <?php foreach ($__notifs as $n): ?>
+                <span>
+                    <a href="<?= h($n['link']) ?>"
+                       style="color:#92400e;font-weight:600;text-decoration:underline;">
+                        <?= h($n['text']) ?>
+                    </a>
+                </span>
+            <?php endforeach; ?>
+        </div>
+        <form method="post" action="/notif-dismiss.php" style="flex-shrink:0;margin:0;">
+            <?= csrf_field() ?>
+            <input type="hidden" name="back" value="<?= h($_SERVER['REQUEST_URI'] ?? '/') ?>">
+            <button type="submit"
+                    style="background:none;border:1px solid #d97706;border-radius:4px;cursor:pointer;
+                           font-size:0.78rem;color:#92400e;font-weight:600;padding:0.2rem 0.6rem;
+                           font-family:var(--f-sans);">
+                Dismiss
+            </button>
+        </form>
+    </div>
+    <?php endif; ?>
 
     <!-- Topbar -->
     <div class="site-topbar">
