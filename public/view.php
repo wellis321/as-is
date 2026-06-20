@@ -765,6 +765,38 @@ function clearHighlight() {
     });
 }
 
+// ── Draggable detail panel ────────────────────────────────────────────────────
+// Mousedown on the [data-drag-handle] header starts a drag; the panel can
+// then be repositioned anywhere over the diagram.
+let _dd = false, _ddEnded = false, _dox = 0, _doy = 0;
+
+detail?.addEventListener('mousedown', e => {
+    if (!e.target.closest('[data-drag-handle]')) return;
+    if (e.button !== 0) return;
+    _dd = true;
+    const r = detail.getBoundingClientRect();
+    _dox = e.clientX - r.left;
+    _doy = e.clientY - r.top;
+    detail.style.cursor = 'grabbing';
+    e.preventDefault();  // prevent wrap drag-to-pan from activating
+    e.stopPropagation();
+});
+
+document.addEventListener('mousemove', e => {
+    if (!_dd || !wrap || !detail) return;
+    const wr = wrap.getBoundingClientRect();
+    detail.style.left = Math.max(0, e.clientX - wr.left + wrap.scrollLeft - _dox) + 'px';
+    detail.style.top  = Math.max(0, e.clientY - wr.top  + wrap.scrollTop  - _doy) + 'px';
+});
+
+document.addEventListener('mouseup', () => {
+    if (!_dd) return;
+    _dd = false;
+    _ddEnded = true;
+    setTimeout(() => { _ddEnded = false; }, 80); // suppress the following click
+    if (detail) detail.style.cursor = '';
+});
+
 // Render a single step as a compact card row
 function stepCardHtml(s, isLast) {
     const sys = s.systems
@@ -812,12 +844,16 @@ clickHandlers.forEach(({ el: g, step }) => {
         const cards = relSteps.map((s, i) => stepCardHtml(s, i === count - 1)).join('');
 
         detail.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;
+            <div data-drag-handle style="display:flex;justify-content:space-between;align-items:center;
                         padding-bottom:0.45rem;margin-bottom:0.1rem;
-                        border-bottom:2px solid var(--border);">
-                <span style="font-size:0.7rem;font-weight:700;color:var(--muted);
-                             text-transform:uppercase;letter-spacing:0.06em;">
-                    ${count} step${count !== 1 ? 's' : ''} in focus</span>
+                        border-bottom:2px solid var(--border);
+                        cursor:grab;user-select:none;">
+                <span style="display:flex;align-items:center;gap:0.4rem;">
+                    <span style="color:var(--muted);font-size:1rem;line-height:1;letter-spacing:1px;">&#8942;&#8942;</span>
+                    <span style="font-size:0.7rem;font-weight:700;color:var(--muted);
+                                 text-transform:uppercase;letter-spacing:0.06em;">
+                        ${count} step${count !== 1 ? 's' : ''} in focus</span>
+                </span>
                 <button id="closeDetail" style="background:none;border:none;cursor:pointer;
                         font-size:1.2rem;color:var(--muted);padding:0;line-height:1;">&#215;</button>
             </div>
@@ -845,7 +881,9 @@ clickHandlers.forEach(({ el: g, step }) => {
 });
 
 // Click on background → dismiss panel and clear highlight
+// (but not if the user just finished dragging the panel)
 wrap?.addEventListener('click', e => {
+    if (_ddEnded) return; // suppress click that fires immediately after drag ends
     if (e.target === wrap || e.target.closest('#swimlane-canvas svg')) {
         if (detail) detail.hidden = true;
         clearHighlight();
