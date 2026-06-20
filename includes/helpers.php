@@ -1937,8 +1937,8 @@ function render_layout(string $title, string $content, array $options = []): voi
         /* ── Diagram viewer ──────────────────────────────────── */
         .diagram-wrap {
             overflow: auto;
-            max-height: 70vh;
-            min-height: 200px;
+            max-height: 80vh;
+            min-height: 380px;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--r-lg);

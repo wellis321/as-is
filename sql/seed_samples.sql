@@ -1,4 +1,4 @@
-DELETE FROM as_is_documents WHERE slug IN ('sample-customer-first', 'sample-purchase-to-pay');
+DELETE FROM as_is_documents WHERE slug IN ('sample-customer-first', 'sample-purchase-to-pay', 'sample-repair-quick');
 
 INSERT INTO systems (name, description) VALUES
     ('Liberty Converse',     'Primary telephony and call-logging platform'),
@@ -172,3 +172,50 @@ INSERT INTO step_connections (from_step_id, to_step_id, label) VALUES
     (@d2s17, @d2s18, 'Query'), (@d2s17, @d2s19, 'Approved'),
     (@d2s18, @d2s15, 'Revised invoice'),
     (@d2s19, @d2s20, NULL);
+
+
+-- ── Sample 3: Housing Repair — Quick View ────────────────────────────────────
+-- Short illustrative example (7 steps, 3 lanes) designed to be fully readable
+-- at default zoom. Mirrors the style of the home page illustration.
+
+INSERT INTO as_is_documents (title, slug, description, status, owner, department, captured_date, version) VALUES (
+    'Housing Repair — Quick View',
+    'sample-repair-quick',
+    'A short illustrative example showing how a repair request flows from the tenant through housing officers to the trade team. Designed to be readable at a glance.',
+    'published', 'Housing Services', 'Housing', '2024-03-01', 'v1.0'
+);
+SET @doc3 = LAST_INSERT_ID();
+
+INSERT INTO lanes (as_is_id, name, sort_order, color) VALUES
+    (@doc3, 'Tenant',         1, '#fff3e0'),
+    (@doc3, 'Housing Officer',2, '#e8f5e9'),
+    (@doc3, 'Trade Team',     3, '#e3f2fd');
+SET @l3_t  = (SELECT id FROM lanes WHERE as_is_id = @doc3 AND name = 'Tenant'),
+    @l3_ho = (SELECT id FROM lanes WHERE as_is_id = @doc3 AND name = 'Housing Officer'),
+    @l3_tr = (SELECT id FROM lanes WHERE as_is_id = @doc3 AND name = 'Trade Team');
+
+INSERT INTO steps (as_is_id, lane_id, step_number, title, description, step_type, action_type) VALUES
+    (@doc3, @l3_t,  1, 'Report repair',      'Tenant calls in to report a repair needed at their property.',                            'start',    'phone'),
+    (@doc3, @l3_ho, 2, 'Log request',        'Log caller details and repair description. Check property notes for vulnerabilities.',    'task',     'data-entry'),
+    (@doc3, @l3_ho, 3, 'Assess job',         'Review repair type and urgency against the housing repairs policy.',                     'task',     'check'),
+    (@doc3, @l3_ho, 4, 'Priority?',          'Is this an emergency repair or a routine appointment job?',                             'decision', 'general'),
+    (@doc3, @l3_ho, 5, 'Book appointment',   'Find available slot and book a standard appointment within the target timescale.',       'task',     'data-entry'),
+    (@doc3, @l3_ho, 6, 'Raise urgent job',   'Flag as emergency, notify on-call trade supervisor, and log in the system.',            'task',     'escalation'),
+    (@doc3, @l3_tr, 7, 'Complete repair',    'Trade operative attends, carries out the repair, and records the outcome on site.',     'end',      'visit');
+
+SET @d3s1 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 1),
+    @d3s2 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 2),
+    @d3s3 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 3),
+    @d3s4 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 4),
+    @d3s5 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 5),
+    @d3s6 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 6),
+    @d3s7 = (SELECT id FROM steps WHERE as_is_id = @doc3 AND step_number = 7);
+
+INSERT INTO step_connections (from_step_id, to_step_id, label) VALUES
+    (@d3s1, @d3s2, NULL),
+    (@d3s2, @d3s3, NULL),
+    (@d3s3, @d3s4, NULL),
+    (@d3s4, @d3s5, 'Routine'),
+    (@d3s4, @d3s6, 'Emergency'),
+    (@d3s5, @d3s7, NULL),
+    (@d3s6, @d3s7, NULL);

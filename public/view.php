@@ -242,20 +242,21 @@ function renderSwimlane(data, canvasEl) {
     if (!lanes.length || !steps.length) return null;
 
     // ── Layout constants ─────────────────────────────────────────
-    const LBL_W   = 140;   // lane label column
-    const NODE_W  = 168;   // node width
-    const NODE_H  = 62;    // node height
-    const H_GAP   = 48;    // horizontal gap between columns
-    const LANE_H  = 126;   // lane band height
-    const TOP_PAD = 46;    // room above first lane for loop-back arrows
-    const BOT_PAD = 14;
+    const LEFT_PAD = 20;   // left content padding (no dedicated label column)
+    const RIGHT_PAD = 130; // right padding — lane label lives here
+    const NODE_W  = 152;   // node width
+    const NODE_H  = 66;    // node height
+    const H_GAP   = 28;    // horizontal gap between columns
+    const LANE_H  = 168;   // lane band height — generous for readability
+    const TOP_PAD = 52;    // room above first lane for loop-back arrows
+    const BOT_PAD = 20;
 
     // Assign each unique step_number a column index (left to right)
     const sortedNums = [...new Set(steps.map(s => s.step_number))].sort((a, b) => a - b);
     const colOf      = new Map(sortedNums.map((n, i) => [n, i]));
     const numCols    = sortedNums.length;
 
-    const totalW = LBL_W + numCols * NODE_W + (numCols - 1) * H_GAP + 48;
+    const totalW = LEFT_PAD + numCols * NODE_W + (numCols - 1) * H_GAP + RIGHT_PAD;
     const totalH = TOP_PAD + lanes.length * LANE_H + BOT_PAD;
 
     const laneIdxOf = new Map(lanes.map((l, i) => [l.id, i]));
@@ -265,7 +266,7 @@ function renderSwimlane(data, canvasEl) {
     steps.forEach(s => {
         const col = colOf.get(s.step_number) ?? 0;
         const li  = laneIdxOf.get(s.lane_id) ?? 0;
-        const cx  = LBL_W + col * (NODE_W + H_GAP) + NODE_W / 2;
+        const cx  = LEFT_PAD + col * (NODE_W + H_GAP) + NODE_W / 2;
         const cy  = TOP_PAD + li * LANE_H + LANE_H / 2;
         pos.set(s.id, { cx, cy, x: cx - NODE_W / 2, y: cy - NODE_H / 2 });
     });
@@ -311,7 +312,22 @@ function renderSwimlane(data, canvasEl) {
         return t;
     };
 
+    // Lane colours are stored as light tint backgrounds (e.g. #fff3e0).
+    // Use them directly for the band fill; pair with a pre-set deep label colour.
+    const LANE_LABEL_COLORS = ['#6b4f2a', '#2f5c3a', '#1a4469', '#5c1fa0', '#7a1f28', '#4a5568'];
+    const LANE_FILL_FALLBACK = ['#fff3e0', '#e8f5e9', '#e3f2fd', '#f3e8ff', '#fde8e8', '#f0f4f8'];
+    function parseLaneColor(hex, idx) {
+        // #ffffff means "not set" (edit page default) — use the palette instead
+        const isReal = hex && /^#[0-9a-fA-F]{6}$/.test(hex) && hex.toLowerCase() !== '#ffffff';
+        const fill   = isReal ? hex : LANE_FILL_FALLBACK[idx % LANE_FILL_FALLBACK.length];
+        const stroke = LANE_LABEL_COLORS[idx % LANE_LABEL_COLORS.length];
+        return { fill, stroke };
+    }
+
     const svg = el('svg', { width: totalW, height: totalH, viewBox: `0 0 ${totalW} ${totalH}` });
+
+    // Subtle off-white canvas background
+    svg.appendChild(el('rect', { x:0, y:0, width:totalW, height:totalH, fill:'#f6f8fa' }));
 
     // ── Arrow markers ─────────────────────────────────────────────
     const defs = el('defs');
@@ -333,24 +349,23 @@ function renderSwimlane(data, canvasEl) {
     svg.appendChild(defs);
 
     // ── Lane bands ────────────────────────────────────────────────
-    // Alternating white / off-white — same visual rhythm as a zebra-striped table.
-    const LANE_EVEN = '#ffffff';
-    const LANE_ODD  = '#e8eaed';
-
+    // Each band uses the lane's stored colour as a tinted fill; label sits top-right.
     lanes.forEach((lane, i) => {
-        const color = i % 2 === 0 ? LANE_EVEN : LANE_ODD;
+        const { fill, stroke } = parseLaneColor(lane.color, i);
         const y = TOP_PAD + i * LANE_H;
 
-        svg.appendChild(el('rect', { x:0, y, width:totalW, height:LANE_H, fill:color }));
-        svg.appendChild(el('line', { x1:0, y1:y+LANE_H, x2:totalW, y2:y+LANE_H, stroke:'#e5e7eb', 'stroke-width':1 }));
-        svg.appendChild(el('line', { x1:LBL_W, y1:y, x2:LBL_W, y2:y+LANE_H, stroke:'#d1d5db', 'stroke-width':1 }));
+        svg.appendChild(el('rect', { x:0, y, width:totalW, height:LANE_H, fill }));
+        svg.appendChild(el('line', { x1:0, y1:y+LANE_H, x2:totalW, y2:y+LANE_H, stroke:'#d1d5db', 'stroke-width':1 }));
 
-        const label = lane.name.length > 14 ? lane.name.slice(0, 13) + '…' : lane.name;
-        svg.appendChild(txt(LBL_W / 2, y + LANE_H / 2, label, {
-            'font-family': 'Segoe UI,system-ui,sans-serif',
-            'font-size':   lane.name.length > 11 ? 11 : 13,
-            'font-weight': 600, fill: '#1f2937',
-        }));
+        // Lane name — top-right corner of the band, serif to match the illustrated style
+        const lbl = el('text', {
+            x: totalW - 10, y: y + 18,
+            'text-anchor': 'end', 'dominant-baseline': 'middle',
+            'font-family': "'IBM Plex Serif', Georgia, serif",
+            'font-size': 13, 'font-weight': 600, fill: stroke,
+        });
+        lbl.textContent = lane.name;
+        svg.appendChild(lbl);
     });
 
     // ── Connections (paths drawn before nodes; labels queued for after) ──
@@ -454,7 +469,7 @@ function renderSwimlane(data, canvasEl) {
         const badgeTY = isPill ? y + 14  : y + 12;
         g.appendChild(el('rect', { x:badgeX, y:badgeY, width:22, height:14, rx:3, fill:col.stroke, opacity:0.2 }));
         g.appendChild(txt(badgeTX, badgeTY, step.step_number, {
-            'font-family':'Segoe UI,system-ui,sans-serif',
+            'font-family':"'IBM Plex Sans',system-ui,sans-serif",
             'font-size':9, 'font-weight':700, fill:col.text,
         }));
 
@@ -475,7 +490,7 @@ function renderSwimlane(data, canvasEl) {
         const ty0 = cy - (dl.length - 1) * LH / 2 + 4;
         dl.forEach((line, li) => {
             g.appendChild(txt(cx, ty0 + li * LH, line, {
-                'font-family':'Segoe UI,system-ui,sans-serif', 'font-size':11, fill:col.text,
+                'font-family':"'IBM Plex Sans',system-ui,sans-serif", 'font-size':11, fill:col.text,
             }));
         });
 
