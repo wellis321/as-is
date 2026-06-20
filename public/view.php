@@ -252,7 +252,7 @@ function renderSwimlane(data, canvasEl) {
     const LEFT_PAD   = 20;  // left padding
     const RIGHT_PAD  = 20;  // right padding
     const LANE_HDR   = 28;  // header strip height at top of each lane
-    const LANE_V_PAD = 24;  // padding above and below node rows within a lane
+    const LANE_V_PAD = 36;  // padding above and below node rows within a lane
     const NODE_W     = 152; // node width
     const NODE_H     = 66;  // node height
     const H_GAP      = 28;  // horizontal gap between columns
@@ -511,9 +511,15 @@ function renderSwimlane(data, canvasEl) {
             }
             const mid  = (by1 + by2) / 2;
             d         = `M${bx1},${by1} C${bx1},${mid} ${bx2},${mid} ${bx2},${by2}`;
-            dStraight = `M${bx1},${by1} L${bx1},${mid} L${bx2},${mid} L${bx2},${by2}`;
+            // Straight: keep the horizontal crossing segment inside the SOURCE lane's
+            // padding so it never falls on or between lane boundaries.
+            // Downward → elbow in source lane's bottom padding; upward → top padding.
+            const elbowY = laneYTgt >= laneYSrc
+                ? by1 + LANE_V_PAD * 0.55   // inside source lane bottom buffer
+                : by1 - LANE_V_PAD * 0.55;  // inside source lane top buffer
+            dStraight = `M${bx1},${by1} L${bx1},${elbowY} L${bx2},${elbowY} L${bx2},${by2}`;
             stroke = '#3b82f6'; markerId = 'aCross';
-            lx = (bx1 + bx2) / 2 + 8; ly = mid;
+            lx = (bx1 + bx2) / 2 + 8; ly = elbowY;
 
         } else {
             // Same-row forward — y1 === y2 so the bezier is already straight
