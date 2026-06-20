@@ -2436,9 +2436,13 @@ function render_layout(string $title, string $content, array $options = []): voi
         <strong style="font-size:0.9rem;">Share feedback</strong>
         <button onclick="document.getElementById('feedback-panel').hidden=true;
                          document.getElementById('feedback-toggle').setAttribute('aria-expanded','false');"
-                style="background:none;border:none;cursor:pointer;
-                       color:var(--muted);padding:0;line-height:1;display:flex;" aria-label="Close">
-                <i data-lucide="x" style="width:1.1rem;height:1.1rem;"></i></button>
+                style="background:var(--bg);border:1px solid var(--border);border-radius:6px;
+                       cursor:pointer;color:var(--muted);padding:0.3rem 0.4rem;
+                       line-height:1;display:flex;align-items:center;transition:background .15s,color .15s;"
+                onmouseover="this.style.background='var(--border)';this.style.color='var(--text)'"
+                onmouseout="this.style.background='var(--bg)';this.style.color='var(--muted)'"
+                aria-label="Close feedback">
+                <i data-lucide="x" style="width:1rem;height:1rem;"></i></button>
     </div>
     <form id="feedback-form" onsubmit="submitFeedback(event)">
         <input type="hidden" id="fb-page" name="page">

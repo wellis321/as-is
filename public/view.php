@@ -948,19 +948,29 @@ clickHandlers.forEach(({ el: g, step }) => {
             </div>
             <div style="overflow-y:auto;max-height:340px;">${cards}</div>`;
 
-        // Opposite-corner positioning so the panel never covers the mini-flow
+        // Position the panel within the VISIBLE VIEWPORT, not the full wrap height.
+        // Since the page scrolls (not the wrap), we work in viewport coordinates
+        // and convert back to wrap-relative (absolute) by subtracting wrapRect.
         const wrapRect   = wrap.getBoundingClientRect();
         const PANEL_W    = 310;
-        const clickFracX = (e.clientX - wrapRect.left) / wrap.clientWidth;
-        const clickFracY = (e.clientY - wrapRect.top)  / wrap.clientHeight;
-        const px = clickFracX > 0.5
-            ? wrap.scrollLeft + 12
-            : wrap.scrollLeft + wrap.clientWidth - PANEL_W - 12;
-        const py = clickFracY > 0.5
-            ? wrap.scrollTop  + 12
-            : wrap.scrollTop  + wrap.clientHeight - 380 - 12;
-        detail.style.left  = Math.max(wrap.scrollLeft + 6, px) + 'px';
-        detail.style.top   = Math.max(wrap.scrollTop  + 6, py) + 'px';
+        const PANEL_H    = 400;
+        const vpW = window.innerWidth;
+        const vpH = window.innerHeight;
+
+        // Choose x: opposite half from the click, clamped to viewport
+        let vpX = e.clientX > vpW / 2
+            ? Math.max(10, e.clientX - PANEL_W - 20)
+            : Math.min(vpW - PANEL_W - 10, e.clientX + 20);
+
+        // Choose y: above or below click, kept inside the viewport
+        let vpY = e.clientY > vpH / 2
+            ? Math.max(10, e.clientY - PANEL_H - 20)
+            : Math.min(vpH - PANEL_H - 10, e.clientY + 20);
+
+        // Convert viewport coords → wrap-relative absolute coords
+        // (wrapRect.top already accounts for page scroll via getBoundingClientRect)
+        detail.style.left  = Math.max(0, vpX - wrapRect.left) + 'px';
+        detail.style.top   = Math.max(0, vpY - wrapRect.top)  + 'px';
         detail.style.width = PANEL_W + 'px';
         detail.hidden = false;
         if (typeof lucide !== 'undefined') lucide.createIcons({ nameAttr: 'data-lucide', nodes: [detail] });
