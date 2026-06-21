@@ -233,15 +233,8 @@ ob_start();
                             <input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
                             <select name="role"
                                     data-original="<?= h($u['app_role']) ?>"
-                                    onchange="
-                                        const orig = this.dataset.original;
-                                        const label = this.options[this.selectedIndex].text;
-                                        const name  = '<?= h(addslashes($u['display_name'] ?: $u['username'])) ?>';
-                                        if (confirm('Change ' + name + '\\'s role to ' + label + '?')) {
-                                            this.form.submit();
-                                        } else {
-                                            this.value = orig;
-                                        }"
+                                    data-username="<?= h($u['display_name'] ?: $u['username']) ?>"
+                                    onchange="confirmRoleChange(this)"
                                     style="font-size:0.75rem;font-weight:700;text-transform:uppercase;
                                            letter-spacing:0.04em;padding:0.15rem 0.4rem;border-radius:4px;
                                            border:1px solid var(--border);cursor:pointer;<?= $rs ?>
@@ -331,6 +324,19 @@ ob_start();
     <?php endforeach; ?>
 </div>
 
-<script>document.addEventListener('DOMContentLoaded', () => { if (typeof lucide !== 'undefined') lucide.createIcons(); });</script>
+<script>
+document.addEventListener('DOMContentLoaded', () => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+
+function confirmRoleChange(select) {
+    var orig  = select.dataset.original;
+    var name  = select.dataset.username;
+    var label = select.options[select.selectedIndex].text;
+    if (window.confirm('Change ' + name + '’s role to ' + label + '?')) {
+        select.form.submit();
+    } else {
+        select.value = orig;
+    }
+}
+</script>
 <?php
 render_layout('Admin', ob_get_clean() ?: '');
