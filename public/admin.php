@@ -231,7 +231,17 @@ ob_start();
                             <input type="hidden" name="action"     value="change_role">
                             <input type="hidden" name="user_id"   value="<?= (int)$u['id'] ?>">
                             <input type="hidden" name="csrf_token" value="<?= h($csrfToken) ?>">
-                            <select name="role" onchange="this.form.submit()"
+                            <select name="role"
+                                    data-original="<?= h($u['app_role']) ?>"
+                                    onchange="
+                                        const orig = this.dataset.original;
+                                        const label = this.options[this.selectedIndex].text;
+                                        const name  = '<?= h(addslashes($u['display_name'] ?: $u['username'])) ?>';
+                                        if (confirm('Change ' + name + '\\'s role to ' + label + '?')) {
+                                            this.form.submit();
+                                        } else {
+                                            this.value = orig;
+                                        }"
                                     style="font-size:0.75rem;font-weight:700;text-transform:uppercase;
                                            letter-spacing:0.04em;padding:0.15rem 0.4rem;border-radius:4px;
                                            border:1px solid var(--border);cursor:pointer;<?= $rs ?>
