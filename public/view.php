@@ -81,7 +81,7 @@ endif;
 ?>
 
 <!-- ── Document header ───────────────────────────────────────────── -->
-<header>
+<header class="no-print">
     <div>
         <h1><?= h($document['title']) ?></h1>
         <?php if (!empty($document['description'])): ?>
@@ -115,10 +115,10 @@ endif;
 <?php else: ?>
 
 <!-- ── Integrated process map ────────────────────────────────────── -->
-<section class="card no-print" style="padding:0;overflow:hidden;">
+<section class="card print-diagram-section" style="padding:0;overflow:hidden;">
 
-    <!-- Toolbar -->
-    <div style="display:flex;justify-content:space-between;align-items:center;
+    <!-- Toolbar (hidden when printing) -->
+    <div class="no-print" style="display:flex;justify-content:space-between;align-items:center;
                 padding:0.85rem 1.25rem;border-bottom:1px solid var(--border);
                 flex-wrap:wrap;gap:0.5rem;">
         <div>
@@ -164,8 +164,8 @@ endif;
                     pointer-events:all;"></div>
     </div>
 
-    <!-- Colour legend -->
-    <div style="padding:0.45rem 1.25rem;border-top:1px solid var(--border);
+    <!-- Colour legend (hidden when printing) -->
+    <div class="no-print" style="padding:0.45rem 1.25rem;border-top:1px solid var(--border);
                 display:flex;flex-wrap:wrap;gap:0.6rem;align-items:center;font-size:0.72rem;color:var(--muted);">
         <strong style="color:var(--text);">Key:</strong>
         <?php
@@ -235,10 +235,34 @@ endif;
 
 <?php if ($print): ?>
 <style>
-    .no-print { display:none !important; }
-    .print-only-lanes { display:block !important; }
+    /* Hide interactive controls and the text fallback — print the diagram instead */
+    .no-print          { display:none !important; }
+    .print-only-lanes  { display:none !important; }
+
+    /* Make the diagram section visible and properly sized for print */
+    .print-diagram-section {
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        overflow: visible !important;
+    }
+    .diagram-wrap {
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        cursor: default !important;
+    }
+    #diagramWrap svg {
+        width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
+        display: block !important;
+    }
+    #step-detail, #btnExitFull, #feedback-toggle, #feedback-panel { display: none !important; }
 </style>
-<script>window.addEventListener('load', () => setTimeout(() => window.print(), 400));</script>
+<script>window.addEventListener('load', () => setTimeout(() => window.print(), 600));</script>
 <?php endif; ?>
 
 <script>
@@ -970,11 +994,11 @@ function applyHighlight(stepId) {
     });
     nodeGroups.forEach((g, id) => {
         if (related.has(id)) { g.style.opacity = '1';    g.style.filter = ''; }
-        else                  { g.style.opacity = '0.12'; g.style.filter = 'grayscale(100%)'; }
+        else                  { g.style.opacity = '0.28'; g.style.filter = 'grayscale(100%)'; }
     });
     connEls.forEach(({ from, to, pathEl, labelEls }) => {
         const active = from === stepId || to === stepId;
-        pathEl.style.opacity = active ? '0.9' : '0.06';
+        pathEl.style.opacity = active ? '0.9' : '0.15';
         labelEls.forEach(el => { el.style.opacity = active ? '1' : '0'; });
     });
     return related;
@@ -1151,34 +1175,40 @@ clickHandlers.forEach(({ el: g, step }) => {
 
         // Position the panel within the VISIBLE VIEWPORT, not the full wrap height.
         // Since the page scrolls (not the wrap), we work in viewport coordinates
-        const PANEL_W  = 310;
-        const vpW      = window.innerWidth;
-        const vpH      = window.innerHeight;
-        const TOP_MIN  = 150;
+        const PANEL_W   = 310;
+        const vpW       = window.innerWidth;
+        const vpH       = window.innerHeight;
+        const TOP_MIN   = 150;
         const panelOpen = detail.style.display === 'flex';
 
         if (!panelOpen) {
-            // First click — position the panel in the opposite corner from the click
+            // First click — panel goes on the opposite horizontal side from the click,
+            // always anchored near the TOP to give the card list maximum height.
             const vpX = e.clientX > vpW / 2
                 ? Math.max(10, e.clientX - PANEL_W - 20)
                 : Math.min(vpW - PANEL_W - 10, e.clientX + 20);
-            const vpY = Math.max(TOP_MIN,
-                e.clientY > vpH * 0.6
-                    ? Math.max(TOP_MIN, e.clientY - 420)
-                    : e.clientY + 20
-            );
-            const availH = vpH - vpY - 20;
             detail.style.left          = Math.max(0, vpX) + 'px';
-            detail.style.top           = vpY + 'px';
+            detail.style.top           = TOP_MIN + 'px';
             detail.style.width         = PANEL_W + 'px';
-            detail.style.height        = availH + 'px'; // fill available height so card list expands
-            detail.style.maxHeight     = availH + 'px';
             detail.style.overflowY     = 'hidden';
             detail.style.flexDirection = 'column';
         }
-        // Subsequent clicks on different steps: keep position, just refresh content.
+        // Subsequent clicks: keep position, just refresh content.
 
         detail.style.display = 'flex';
+        detail.style.height  = ''; // let content determine natural height first
+
+        // Two rAF calls: first lets the browser compute layout with the new content,
+        // second reads the settled scrollHeight and applies the correct fixed height
+        // so the card list (flex:1) can scroll when content exceeds available space.
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            if (!detail || detail.style.display !== 'flex') return;
+            const panelTop = parseFloat(detail.style.top) || TOP_MIN;
+            const availH   = window.innerHeight - panelTop - 20;
+            detail.style.maxHeight = availH + 'px';
+            detail.style.height    = Math.min(detail.scrollHeight + 16, availH) + 'px';
+        }));
+
         if (typeof lucide !== 'undefined') lucide.createIcons({ nameAttr: 'data-lucide', nodes: [detail] });
 
         document.getElementById('closeDetail')
