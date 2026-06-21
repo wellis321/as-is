@@ -101,6 +101,7 @@ endif;
     </div>
     <div class="actions no-print">
         <a class="btn btn-secondary btn-sm" href="/view.php?slug=<?= rawurlencode($document['slug']) ?>&print=1" target="_blank">Print</a>
+        <a class="btn btn-secondary btn-sm" href="/export.php?slug=<?= rawurlencode($document['slug']) ?>">Export JSON</a>
         <a class="btn btn-sm" href="/edit.php?slug=<?= rawurlencode($document['slug']) ?>">Edit</a>
         <a class="btn btn-secondary btn-sm" href="/documents.php">Back</a>
     </div>

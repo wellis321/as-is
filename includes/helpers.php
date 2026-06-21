@@ -1305,10 +1305,7 @@ function render_layout(string $title, string $content, array $options = []): voi
         code {
             font-family: 'IBM Plex Mono', 'Courier New', monospace;
             font-size: 0.875em;
-            background: oklch(93% 0.015 245);
             color: var(--text);
-            padding: 0.15rem 0.4rem;
-            border-radius: 4px;
         }
 
         /* ── Page header ─────────────────────────────────────── */
@@ -1396,7 +1393,7 @@ function render_layout(string $title, string $content, array $options = []): voi
 
         .help-step-types-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 1.25rem;
         }
 
@@ -2078,8 +2075,22 @@ function render_layout(string $title, string $content, array $options = []): voi
         .grid { display: grid; gap: 1rem; }
         .inline-form { display: inline; }
 
-        .lnk-danger { color: var(--danger); text-decoration: none; }
-        .lnk-danger:hover { color: oklch(38% 0.17 25); text-decoration: underline; }
+        .lnk-danger {
+            display: inline-flex; align-items: center;
+            font-size: 0.8rem; font-weight: 500; font-family: var(--f-sans);
+            color: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+            padding: 0.25rem 0.6rem;
+            text-decoration: none;
+            background: var(--surface);
+            transition: border-color .15s, color .15s;
+        }
+        .lnk-danger:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+            text-decoration: none;
+        }
 
         /* Clip overflowing text — requires table-layout:fixed on the parent table */
         .td-clip {

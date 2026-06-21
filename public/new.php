@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $owner        = trim((string) ($_POST['owner']        ?? ''));
     $department   = trim((string) ($_POST['department']   ?? ''));
     $capturedDate = trim((string) ($_POST['captured_date'] ?? ''));
-    $version      = trim((string) ($_POST['version']      ?? ''));
+    $version      = 'v1.0'; // always starts at v1.0; can be changed on the Edit page
 
     $laneTemplate = $_POST['lane_template'] ?? 'none';
     // Predefined lane sets: [name, color]
@@ -84,7 +84,7 @@ ob_start();
             <textarea id="description" name="description" placeholder="Brief summary of what this process covers"><?= h($description) ?></textarea>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1rem;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
             <div>
                 <label for="owner">Owner</label>
                 <input type="text" id="owner" name="owner" value="<?= h($owner) ?>" placeholder="Name or team">
@@ -96,10 +96,6 @@ ob_start();
             <div>
                 <label for="captured_date">Date captured</label>
                 <input type="date" id="captured_date" name="captured_date" value="<?= h($capturedDate) ?>">
-            </div>
-            <div>
-                <label for="version">Version</label>
-                <input type="text" id="version" name="version" value="<?= h($version) ?>" placeholder="e.g. v1.0">
             </div>
         </div>
 

@@ -39,6 +39,7 @@ ob_start();
     </div>
     <div class="actions">
         <a class="btn" href="/new.php">+ New AS-IS</a>
+        <a class="btn btn-secondary" href="/import.php">Import JSON</a>
     </div>
 </header>
 

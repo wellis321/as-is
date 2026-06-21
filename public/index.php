@@ -125,7 +125,7 @@ ob_start();
             <article class="landing-feature-card">
                 <i data-lucide="crosshair" class="lfc-icon"></i>
                 <h3>Click any step to focus</h3>
-                <p>Click a step to highlight it and its immediate connections. Everything else fades to grey. A card panel shows the full description of every related step — drag it out of the way if needed.</p>
+                <p>Click a step to highlight it and its connections. The diagram scrolls to show all related steps. A card panel opens with a mini flow diagram and full descriptions — click another step to switch without closing.</p>
             </article>
             <article class="landing-feature-card">
                 <i data-lucide="zoom-in" class="lfc-icon"></i>
@@ -136,18 +136,33 @@ ob_start();
         <div class="landing-features" style="margin-top:1.5rem;">
             <article class="landing-feature-card">
                 <i data-lucide="git-branch" class="lfc-icon"></i>
-                <h3>Colour-coded connection types</h3>
-                <p>Grey arrows stay within a lane. Blue arrows show handoffs between teams. Amber dashed arrows show loop-backs. Each is visually distinct so you can trace the flow at a glance.</p>
+                <h3>Clear connections and decision branches</h3>
+                <p>Grey same-lane arrows, blue cross-lane handoffs, amber loop-backs. Decision branches display on separate rows so each path is visually distinct. Toggle between straight and curved connections in the toolbar.</p>
             </article>
             <article class="landing-feature-card">
                 <i data-lucide="panel-right" class="lfc-icon"></i>
                 <h3>Step detail on demand</h3>
-                <p>Clicking a step shows a card list of all steps in focus — including their description, action type icon, and any linked systems. No need to open a separate edit screen.</p>
+                <p>A panel opens showing a compact mini diagram of the related steps, then a card for each one — title, description, action type, and linked systems. Click any other step to switch instantly. See an example on the <a href="/help.php#focus">Guidance page</a>.</p>
+            </article>
+            <article class="landing-feature-card">
+                <i data-lucide="file-json" class="lfc-icon"></i>
+                <h3>Export and import JSON</h3>
+                <p>Download any diagram as a clean JSON file. Review and edit it, then import it to create a new diagram instantly — on the same system or a different one.</p>
             </article>
             <article class="landing-feature-card">
                 <i data-lucide="printer" class="lfc-icon"></i>
                 <h3>Print-ready</h3>
                 <p>The <strong>Print</strong> button opens a clean, navigation-free version your browser can print or save as a PDF — useful for workshops and sign-off sessions.</p>
+            </article>
+            <article class="landing-feature-card">
+                <i data-lucide="maximize" class="lfc-icon"></i>
+                <h3>Full screen for workshops</h3>
+                <p>Expand any diagram to fill the entire screen. An exit button appears inside the diagram so you can leave full screen without hunting for controls — ideal for presenting in a meeting room.</p>
+            </article>
+            <article class="landing-feature-card">
+                <i data-lucide="move-right" class="lfc-icon"></i>
+                <h3>Straight or curved connections</h3>
+                <p>Toggle between right-angle and smooth bezier connections in the toolbar. Straight lines are easier to follow on complex branching diagrams. Your preference is saved between sessions.</p>
             </article>
         </div>
     </div>
@@ -187,12 +202,14 @@ ob_start();
             <h2 class="landing-h2">What to expect</h2>
             <p>This is a working management system, not just a diagram viewer. Here is what you can do today:</p>
             <ul class="landing-checklist">
+                <li>Export any diagram as a JSON file and re-import it elsewhere — share a process map with a colleague in a single file</li>
                 <li>Create a new map with a lane template — Housing repairs, Procurement, or your own — so lanes are ready instantly</li>
                 <li>Add steps with the next number pre-filled, clone similar steps in one click, and get prompted when connections are missing</li>
                 <li>Build colour-coded swimlanes with six step types including <strong>Subprocess</strong> and <strong>Parallel gateway</strong></li>
                 <li>View interactive diagrams with multi-row layout — even a 21-step process fits on screen</li>
-                <li>Click any step to focus on it and see its connections and descriptions in a card panel</li>
-                <li>Zoom, pan, and go full screen for workshops and presentations</li>
+                <li>Click any step to focus — diagram scrolls to show related steps, mini flow diagram appears, clicking another step updates the panel in place</li>
+                <li>Decision branches display on their own rows so each path reads clearly</li>
+                <li>Zoom, pan, go full screen, and switch between straight and curved connections</li>
                 <li>Browse a shared systems library used across all maps</li>
                 <li>Load sample maps to explore before building your own</li>
             </ul>

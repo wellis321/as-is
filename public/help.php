@@ -112,35 +112,68 @@ ob_start();
     </div>
 </div>
 
+<!-- ── JSON export and import ─────────────────────────────────────── -->
+<div class="card">
+    <h2>Exporting and importing JSON</h2>
+    <p>
+        Any process map can be exported as a clean JSON file and re-imported to create a new diagram — useful for
+        sharing maps with colleagues, moving between environments, or backing up your work.
+    </p>
+
+    <div style="display:grid;gap:0;">
+        <?php
+        $jsonSteps = [
+            ['Export a diagram',
+             'On the <strong>View</strong> page for any diagram, click <strong>Export JSON</strong>. A <code>.json</code> file will download containing the full document — title, metadata, lanes, steps, systems, and connections.'],
+            ['Review and edit the JSON',
+             'On the <strong>Import</strong> page, either upload the file or paste the JSON directly into the editor. The content appears in a text editor where you can review it, rename steps, change colours, or adjust connections before creating the diagram.'],
+            ['Import to create a new diagram',
+             'Click <strong>Import and create document</strong>. The system creates the document, lanes, steps, system links, and connections, then takes you straight to the Edit page to review the result.'],
+        ];
+        foreach ($jsonSteps as $i => [$title, $body]):
+        ?>
+        <div style="display:grid;grid-template-columns:48px 1fr;gap:0;border-bottom:<?= $i < count($jsonSteps)-1 ? '1px solid var(--border)' : 'none' ?>;padding:1rem 0;">
+            <div style="font-size:1.4rem;font-weight:700;color:var(--accent);padding-top:0.1rem;"><?= $i + 1 ?></div>
+            <div>
+                <strong><?= $title ?></strong>
+                <p style="margin-top:0.3rem;margin-bottom:0;"><?= $body ?></p>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+
+    <p style="margin:1rem 0 0;font-size:0.875rem;color:var(--muted);">
+        The JSON format is human-readable — you can open it in any text editor and modify it directly.
+        The import page shows the expected structure if you want to create a JSON file from scratch rather than exporting one.
+        Go to <a href="/import.php">Import JSON</a> to get started.
+    </p>
+</div>
+
 <!-- ── Step types ────────────────────────────────────────────────── -->
 <div class="card">
     <h2>Step types</h2>
     <p>Step type controls how the step appears in the diagram.</p>
+    <?php
+    $stepTypeItems = [
+        ['Start',            'badge-start',  '',                                           'The first step in the process — where it begins. Shown as a pill shape with a green border.'],
+        ['Task',             'badge-task',   '',                                           'A regular action performed by someone in the lane. The default for most steps.'],
+        ['Decision',         'badge-decision','',                                          'A branching point — one path or another is taken. Give outgoing connections labels like "Yes" and "No".'],
+        ['Subprocess',       '',             'background:#eff6ff;color:#1e3a8a;border-color:#2563eb;', 'A step that represents a whole separate process. Shown as a rectangle with a small <strong>+</strong> badge — indicating there is more detail to explore.'],
+        ['Parallel gateway', '',             'background:#fdf4ff;color:#581c87;border-color:#9333ea;', 'Multiple things happen <em>simultaneously</em> — all paths run at once, not one-or-the-other. Shown as a diamond with a <strong>+</strong> inside.'],
+        ['End',              'badge-end',    '',                                           'The final step — where the process concludes. Shown as a pill shape with a red border.'],
+    ];
+    ?>
     <div class="help-step-types-grid">
+        <?php foreach ($stepTypeItems as [$label, $cls, $style, $desc]): ?>
         <div>
-            <div style="margin-bottom:0.5rem;"><span class="badge badge-start">Start</span></div>
-            <p style="margin:0;font-size:0.875rem;">The first step in the process — where it begins. Shown as a pill shape with a green border.</p>
+            <div style="margin-bottom:0.6rem;">
+                <span class="badge <?= $cls ?>" style="display:block;text-align:center;padding:0.4rem 0.6rem;border-radius:0;font-size:0.85rem;font-weight:600;<?= $style ?>">
+                    <?= h($label) ?>
+                </span>
+            </div>
+            <p style="margin:0;font-size:0.875rem;"><?= $desc ?></p>
         </div>
-        <div>
-            <div style="margin-bottom:0.5rem;"><span class="badge badge-task">Task</span></div>
-            <p style="margin:0;font-size:0.875rem;">A regular action performed by someone in the lane. The default for most steps.</p>
-        </div>
-        <div>
-            <div style="margin-bottom:0.5rem;"><span class="badge badge-decision">Decision</span></div>
-            <p style="margin:0;font-size:0.875rem;">A branching point — one path or another is taken. Give outgoing connections labels like "Yes" and "No".</p>
-        </div>
-        <div>
-            <div style="margin-bottom:0.5rem;"><span class="badge" style="background:#eff6ff;color:#1e3a8a;border-color:#2563eb;">Subprocess</span></div>
-            <p style="margin:0;font-size:0.875rem;">A step that represents a whole separate process. Shown as a rectangle with a small <strong>+</strong> badge — indicating there is more detail to explore. Use this when a single step is itself too complex to show in-line.</p>
-        </div>
-        <div>
-            <div style="margin-bottom:0.5rem;"><span class="badge" style="background:#fdf4ff;color:#581c87;border-color:#9333ea;">Parallel gateway</span></div>
-            <p style="margin:0;font-size:0.875rem;">Multiple things happen <em>simultaneously</em> — all outgoing paths run at the same time, not one-or-the-other. Shown as a diamond with a <strong>+</strong> inside. Use this for automated system actions running in parallel with human steps.</p>
-        </div>
-        <div>
-            <div style="margin-bottom:0.5rem;"><span class="badge badge-end">End</span></div>
-            <p style="margin:0;font-size:0.875rem;">The final step — where the process concludes. Shown as a pill shape with a red border.</p>
-        </div>
+        <?php endforeach; ?>
     </div>
 </div>
 
@@ -263,19 +296,217 @@ ob_start();
         </div>
     </div>
 
-    <h3 style="margin:1.5rem 0 0.5rem;font-size:1rem;">Clicking a step to focus</h3>
-    <p style="margin:0 0 0.75rem;">
-        Click any step in the diagram to enter <strong>focus mode</strong>:
+    <h3 style="margin:1.5rem 0 0.5rem;font-size:1rem;">Decision branches on separate rows</h3>
+    <p style="margin:0;">
+        When a decision step has multiple outgoing paths, each branch is placed on its own row so you can
+        see clearly which path leads where. The branch with the most steps continues on the same row
+        as the main flow; exception paths drop to rows below. This mirrors how a process analyst
+        would draw a swimlane diagram by hand.
     </p>
-    <ul style="margin:0;padding-left:1.25rem;display:grid;gap:0.4rem;font-size:0.9rem;">
-        <li>The clicked step and its immediate connections stay vivid.</li>
-        <li>Everything else fades to grey, making the local flow much easier to read.</li>
-        <li>A card panel appears showing the full description, action type, and linked systems for every step in focus.</li>
-        <li>The panel opens in the corner furthest from your click — if it still covers something, <strong>drag it by the header</strong> to move it anywhere on the diagram.</li>
-        <li>Scroll inside the card panel to read longer descriptions; this scrolls the list, not the diagram.</li>
-        <li>Click the same step again, press &times; on the panel, or click the diagram background to clear the focus and restore the full view.</li>
-    </ul>
+
+    <h3 style="margin:1.5rem 0 0.5rem;font-size:1rem;">Connection style</h3>
+    <p style="margin:0;">
+        Use the <strong>Straight</strong> / <strong>Curved</strong> button in the toolbar to switch
+        between orthogonal (right-angle) connections and smooth bezier curves. Straight is the default —
+        right-angle elbows are easier to follow on complex maps. Your preference is saved and remembered
+        across sessions.
+    </p>
+
+    <div style="display:grid;grid-template-columns:1fr 190px;gap:2rem;align-items:start;margin-top:1.5rem;">
+        <div>
+        <h3 style="margin:0 0 0.5rem;font-size:1rem;">Clicking a step to focus</h3>
+        <p style="margin:0 0 0.75rem;">
+            Click any step in the diagram to enter <strong>focus mode</strong>. A panel appears alongside the diagram showing:
+        </p>
+        <ul style="margin:0;padding-left:1.25rem;display:grid;gap:0.45rem;font-size:0.875rem;">
+            <li>The clicked step and its immediate connections stay vivid; everything else fades.</li>
+            <li>The diagram scrolls and zooms to bring all related steps into view at once.</li>
+            <li>A <strong>mini flow diagram</strong> at the top of the panel shows the related steps and connections in a compact schematic — numbered shapes with arrows, no labels.</li>
+            <li>A <strong>card list</strong> below gives the full title, description, action type, and linked systems for each related step.</li>
+            <li><strong>Click a different step</strong> while the panel is open — the panel updates in place without moving.</li>
+            <li>Drag by the grip icon to reposition the panel if it covers something.</li>
+            <li>Press &times;, click the same step, or click the background to close and restore the full view.</li>
+        </ul>
+        </div>
+
+        <!-- Static illustration of the card panel — click to enlarge -->
+        <figure style="margin:0;">
+            <button onclick="document.getElementById('panel-lightbox').showModal()"
+                    style="background:none;border:none;padding:0;cursor:zoom-in;display:block;width:100%;"
+                    title="Click to enlarge">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 320" role="img"
+                 aria-label="Example of the focus card panel — click to enlarge"
+                 style="width:100%;height:auto;display:block;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.08);transition:box-shadow .15s;"
+                 onmouseover="this.style.boxShadow='0 6px 24px rgba(0,0,0,.18)'"
+                 onmouseout="this.style.boxShadow='0 4px 16px rgba(0,0,0,.08)'">
+                <!-- Panel background -->
+                <rect width="260" height="320" rx="10" fill="white"/>
+
+                <!-- Header -->
+                <rect width="260" height="36" rx="10" fill="white"/>
+                <rect y="28" width="260" height="8" fill="white"/>
+                <rect y="36" width="260" height="1" fill="#e2e8f0"/>
+                <!-- Grip icon (dots) -->
+                <circle cx="14" cy="18" r="1.5" fill="#94a3b8"/>
+                <circle cx="14" cy="24" r="1.5" fill="#94a3b8"/>
+                <circle cx="20" cy="18" r="1.5" fill="#94a3b8"/>
+                <circle cx="20" cy="24" r="1.5" fill="#94a3b8"/>
+                <text x="30" y="22" font-family="IBM Plex Sans,sans-serif" font-size="9.5" font-weight="700" fill="#64748b" letter-spacing="0.06em">3 STEPS IN FOCUS</text>
+                <!-- Close button -->
+                <line x1="246" y1="13" x2="252" y2="19" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="252" y1="13" x2="246" y2="19" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/>
+
+                <!-- Mini flow diagram area -->
+                <rect y="37" width="260" height="96" fill="#f8fafc"/>
+                <!-- Step boxes: 4, 5 (selected), 6 -->
+                <rect x="30" y="57" width="46" height="28" rx="3" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1"/>
+                <text x="53" y="74" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#374151">4</text>
+                <!-- Arrow 4→5 -->
+                <line x1="76" y1="71" x2="92" y2="71" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ha)"/>
+                <!-- Step 5 (clicked - bold border) -->
+                <rect x="94" y="57" width="46" height="28" rx="3" fill="#f3f4f6" stroke="#374151" stroke-width="2"/>
+                <text x="117" y="74" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#1f2937">5</text>
+                <!-- Arrow 5→6 -->
+                <line x1="140" y1="71" x2="156" y2="71" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ha)"/>
+                <!-- Step 6 -->
+                <rect x="158" y="57" width="46" height="28" rx="3" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1"/>
+                <text x="181" y="74" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#374151">6</text>
+                <!-- Downward arrow from 5 to 7 -->
+                <line x1="117" y1="85" x2="117" y2="96" stroke="#9ca3af" stroke-width="1.5"/>
+                <line x1="117" y1="96" x2="158" y2="96" stroke="#9ca3af" stroke-width="1.5"/>
+                <line x1="158" y1="96" x2="158" y2="105" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ha)"/>
+                <!-- Step 7 -->
+                <rect x="136" y="107" width="46" height="20" rx="3" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1"/>
+                <text x="159" y="120" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#374151">7</text>
+
+                <!-- Arrowhead marker -->
+                <defs>
+                    <marker id="ha" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto">
+                        <polygon points="0 0,6 2.5,0 5" fill="#9ca3af"/>
+                    </marker>
+                </defs>
+
+                <!-- Divider below mini diagram -->
+                <rect y="133" width="260" height="1" fill="#e2e8f0"/>
+
+                <!-- Card 1 -->
+                <rect y="134" width="260" height="56" fill="white"/>
+                <rect x="12" y="148" width="18" height="18" rx="9" fill="#f1f5f9"/>
+                <text x="21" y="161" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="#475569">4</text>
+                <text x="38" y="150" font-family="IBM Plex Sans,sans-serif" font-size="9.5" font-weight="600" fill="#1f2937">What type of request?</text>
+                <text x="38" y="163" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#64748b">Is this a new repair, update,</text>
+                <text x="38" y="174" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#64748b">reschedule, or cancellation?</text>
+                <rect y="190" width="260" height="1" fill="#e2e8f0"/>
+
+                <!-- Card 2 (highlighted, selected step) -->
+                <rect y="191" width="260" height="62" fill="#f8fafc"/>
+                <rect x="12" y="206" width="18" height="18" rx="9" fill="#1f2937"/>
+                <text x="21" y="219" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="white">5</text>
+                <text x="38" y="208" font-family="IBM Plex Sans,sans-serif" font-size="9.5" font-weight="700" fill="#1f2937">Check property access</text>
+                <text x="38" y="221" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#64748b">Confirm access arrangements</text>
+                <text x="38" y="232" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#64748b">and any vulnerabilities.</text>
+                <!-- System tag -->
+                <rect x="38" y="239" width="38" height="11" rx="3" fill="#e0f2fe"/>
+                <text x="57" y="248" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="7.5" fill="#0369a1">NEC Housing</text>
+                <rect y="253" width="260" height="1" fill="#e2e8f0"/>
+
+                <!-- Card 3 -->
+                <rect y="254" width="260" height="56" fill="white"/>
+                <rect x="12" y="268" width="18" height="18" rx="9" fill="#f1f5f9"/>
+                <text x="21" y="281" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="#475569">6</text>
+                <text x="38" y="270" font-family="IBM Plex Sans,sans-serif" font-size="9.5" font-weight="600" fill="#1f2937">Create repair job on NEC</text>
+                <text x="38" y="283" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#64748b">Raise a new repair, assign the</text>
+                <text x="38" y="294" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#64748b">trade and record description.</text>
+                <rect y="310" width="260" height="1" fill="#e2e8f0"/>
+
+                <!-- Scroll indicator -->
+                <rect x="252" y="137" width="5" height="172" rx="2.5" fill="#e2e8f0"/>
+                <rect x="252" y="137" width="5" height="60" rx="2.5" fill="#94a3b8"/>
+            </svg>
+            </button>
+            <figcaption style="margin-top:0.5rem;font-size:0.78rem;color:var(--muted);text-align:center;">
+                The card panel — click to enlarge
+            </figcaption>
+        </figure>
+    </div>
 </div>
+
+<!-- Lightbox dialog for the card panel illustration -->
+<dialog id="panel-lightbox"
+        style="border:none;border-radius:12px;padding:0;background:transparent;
+               box-shadow:0 24px 64px rgba(0,0,0,0.3);max-width:90vw;max-height:90vh;"
+        onclick="this.close()">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 320" role="img"
+         aria-label="Card panel illustration (enlarged)"
+         style="width:min(480px,85vw);height:auto;display:block;border-radius:12px;background:white;">
+        <!-- Panel background -->
+        <rect width="260" height="320" rx="10" fill="white"/>
+        <!-- Header -->
+        <rect width="260" height="36" rx="10" fill="white"/>
+        <rect y="28" width="260" height="8" fill="white"/>
+        <rect y="36" width="260" height="1" fill="#e2e8f0"/>
+        <circle cx="14" cy="18" r="1.5" fill="#94a3b8"/>
+        <circle cx="14" cy="24" r="1.5" fill="#94a3b8"/>
+        <circle cx="20" cy="18" r="1.5" fill="#94a3b8"/>
+        <circle cx="20" cy="24" r="1.5" fill="#94a3b8"/>
+        <text x="30" y="22" font-family="IBM Plex Sans,sans-serif" font-size="9.5" font-weight="700" fill="#64748b" letter-spacing="0.06em">3 STEPS IN FOCUS</text>
+        <line x1="246" y1="13" x2="252" y2="19" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="252" y1="13" x2="246" y2="19" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/>
+        <!-- Mini flow diagram -->
+        <rect y="37" width="260" height="96" fill="#f8fafc"/>
+        <rect x="30" y="57" width="46" height="28" rx="3" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1"/>
+        <text x="53" y="74" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#374151">4</text>
+        <line x1="76" y1="71" x2="92" y2="71" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ha2)"/>
+        <rect x="94" y="57" width="46" height="28" rx="3" fill="#f3f4f6" stroke="#374151" stroke-width="2"/>
+        <text x="117" y="74" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#1f2937">5</text>
+        <line x1="140" y1="71" x2="156" y2="71" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ha2)"/>
+        <rect x="158" y="57" width="46" height="28" rx="3" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1"/>
+        <text x="181" y="74" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#374151">6</text>
+        <line x1="117" y1="85" x2="117" y2="96" stroke="#9ca3af" stroke-width="1.5"/>
+        <line x1="117" y1="96" x2="158" y2="96" stroke="#9ca3af" stroke-width="1.5"/>
+        <line x1="158" y1="96" x2="158" y2="105" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#ha2)"/>
+        <rect x="136" y="107" width="46" height="20" rx="3" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1"/>
+        <text x="159" y="120" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="10" font-weight="700" fill="#374151">7</text>
+        <defs>
+            <marker id="ha2" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto">
+                <polygon points="0 0,6 2.5,0 5" fill="#9ca3af"/>
+            </marker>
+        </defs>
+        <!-- Cards -->
+        <rect y="133" width="260" height="1" fill="#e2e8f0"/>
+        <rect y="134" width="260" height="56" fill="white"/>
+        <rect x="12" y="148" width="18" height="18" rx="9" fill="#f1f5f9"/>
+        <text x="21" y="161" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="#475569">4</text>
+        <text x="38" y="150" font-family="IBM Plex Sans,sans-serif" font-size="9.5" font-weight="600" fill="#1f2937">What type of request?</text>
+        <text x="38" y="163" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#64748b">Is this a new repair, update,</text>
+        <text x="38" y="174" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#64748b">reschedule, or cancellation?</text>
+        <rect y="190" width="260" height="1" fill="#e2e8f0"/>
+        <rect y="191" width="260" height="62" fill="#f8fafc"/>
+        <rect x="12" y="206" width="18" height="18" rx="9" fill="#1f2937"/>
+        <text x="21" y="219" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="white">5</text>
+        <text x="38" y="208" font-family="IBM Plex Sans,sans-serif" font-size="9.5" font-weight="700" fill="#1f2937">Check property access</text>
+        <text x="38" y="221" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#64748b">Confirm access arrangements</text>
+        <text x="38" y="232" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#64748b">and any vulnerabilities.</text>
+        <rect x="38" y="239" width="38" height="11" rx="3" fill="#e0f2fe"/>
+        <text x="57" y="248" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="7.5" fill="#0369a1">NEC Housing</text>
+        <rect y="253" width="260" height="1" fill="#e2e8f0"/>
+        <rect y="254" width="260" height="56" fill="white"/>
+        <rect x="12" y="268" width="18" height="18" rx="9" fill="#f1f5f9"/>
+        <text x="21" y="281" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-size="9" font-weight="700" fill="#475569">6</text>
+        <text x="38" y="270" font-family="IBM Plex Sans,sans-serif" font-size="9.5" font-weight="600" fill="#1f2937">Create repair job on NEC</text>
+        <text x="38" y="283" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#64748b">Raise a new repair, assign the</text>
+        <text x="38" y="294" font-family="IBM Plex Sans,sans-serif" font-size="8.5" fill="#64748b">trade and record description.</text>
+        <rect y="310" width="260" height="1" fill="#e2e8f0"/>
+        <rect x="252" y="137" width="5" height="172" rx="2.5" fill="#e2e8f0"/>
+        <rect x="252" y="137" width="5" height="60" rx="2.5" fill="#94a3b8"/>
+    </svg>
+    <p style="text-align:center;margin:0.75rem 0 0;font-size:0.8rem;color:rgba(255,255,255,0.7);">
+        Click anywhere to close
+    </p>
+</dialog>
+<style>
+    #panel-lightbox::backdrop { background:rgba(0,0,0,0.6);backdrop-filter:blur(3px); }
+</style>
 
 <!-- ── Tips ──────────────────────────────────────────────────────── -->
 <div class="card">
@@ -287,8 +518,10 @@ ob_start();
         <li>The flow diagram is only generated from connections you have added. If the diagram looks empty, go to the Edit page and add connections between steps.</li>
         <li>The <strong>Print</strong> button on the View page opens a clean, navigation-free version that your browser can print or save as PDF.</li>
         <li>Status <em>Draft</em> means work in progress; <em>Published</em> means it has been signed off and is the current agreed picture.</li>
-        <li>Use <strong>Click to focus</strong> during workshops — clicking a step centres the conversation on exactly what that step does and what comes before and after it.</li>
-        <li>If the step card panel is in the way after clicking, drag it by its header (the grip icon) to move it anywhere on the diagram.</li>
+        <li>Use <strong>Click to focus</strong> during workshops — clicking a step centres the conversation on it, auto-scrolls to show all related steps, and gives everyone the description and connections at a glance.</li>
+        <li>While the card panel is open, click any other step to switch focus instantly — the panel stays in place and updates with the new content. You don't need to close and reopen it.</li>
+        <li>If the card panel is in the way, drag it by the grip icon in its header to move it anywhere on the screen.</li>
+        <li>Switch between <strong>Straight</strong> and <strong>Curved</strong> connections using the toolbar button — straight right-angle lines are often easier to follow on complex branching diagrams.</li>
         <li>The <a href="/view.php?slug=sample-repair-quick">Housing Repair — Quick View</a> sample is the shortest example and shows all the key features: focus mode, cross-lane handoffs, multi-row layout, and both <strong>Subprocess</strong> and <strong>Parallel gateway</strong> step types.</li>
         <li>Use the <strong>Lane templates</strong> on the New AS-IS page to skip the lane setup step entirely for common process structures.</li>
         <li>The <strong>Clone</strong> button on any step creates a duplicate you can adjust — faster than re-entering everything for similar steps.</li>
