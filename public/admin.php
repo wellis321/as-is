@@ -68,6 +68,13 @@ if (empty($_SESSION['csrf_token'])) {
 $csrfToken = $_SESSION['csrf_token'];
 $myUserId  = (int) ($_SESSION['user_id'] ?? 0);
 
+// ── Check if sample data is already loaded ────────────────────────────────────
+$samplesLoaded = false;
+try {
+    $s = $pdo->query("SELECT COUNT(*) FROM as_is_documents WHERE slug IN ('sample-customer-first','sample-purchase-to-pay','sample-repair-quick')")->fetchColumn();
+    $samplesLoaded = (int)$s > 0;
+} catch (Throwable) {}
+
 // ── Stats ─────────────────────────────────────────────────────────────────────
 $totalMaps   = (int) $pdo->query("SELECT COUNT(*) FROM as_is_documents")->fetchColumn();
 $published   = (int) $pdo->query("SELECT COUNT(*) FROM as_is_documents WHERE status = 'published'")->fetchColumn();
@@ -346,15 +353,27 @@ ob_start();
     <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
         <div>
             <h2 style="margin:0 0 0.2rem;font-size:1rem;">Sample process maps</h2>
-            <p style="margin:0;font-size:0.85rem;color:var(--muted);">
-                Load three worked example diagrams — Housing Repair Quick View, Customer First, and Purchase to Pay.
-                Safe to run again; replaces only these samples and never touches your own maps.
-            </p>
+            <?php if ($samplesLoaded): ?>
+                <p style="margin:0;font-size:0.85rem;color:var(--muted);">
+                    The three sample diagrams are already loaded —
+                    <a href="/view.php?slug=sample-repair-quick">Housing Repair Quick View</a>,
+                    <a href="/view.php?slug=sample-customer-first">Customer First</a>, and
+                    <a href="/view.php?slug=sample-purchase-to-pay">Purchase to Pay</a>.
+                    Reload to reset them to their original state.
+                </p>
+            <?php else: ?>
+                <p style="margin:0;font-size:0.85rem;color:var(--muted);">
+                    Load three worked example diagrams — Housing Repair Quick View, Customer First, and Purchase to Pay.
+                    Never touches your own maps.
+                </p>
+            <?php endif; ?>
         </div>
         <form method="post" style="flex-shrink:0;">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="load_samples">
-            <button class="btn btn-secondary btn-sm" type="submit">Load sample documents</button>
+            <button class="btn btn-secondary btn-sm" type="submit">
+                <?= $samplesLoaded ? 'Reload sample documents' : 'Load sample documents' ?>
+            </button>
         </form>
     </div>
 </div>
