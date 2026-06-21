@@ -151,8 +151,9 @@ endif;
             Exit full screen
         </button>
         <div id="swimlane-canvas"></div>
-        <div id="step-detail" hidden
-             style="position:absolute;z-index:200;
+        <div id="step-detail"
+             style="display:none;position:fixed;z-index:500;
+                    flex-direction:column;overflow-y:hidden;
                     background:var(--surface);
                     border:1px solid var(--border);
                     border-radius:var(--r-lg);
@@ -751,7 +752,7 @@ function renderSwimlane(data, canvasEl) {
     });
 
     canvasEl.appendChild(svg);
-    return { svg, clickHandlers, nodeGroups, connEls };
+    return { svg, clickHandlers, nodeGroups, connEls, stepLayout };
 }
 
 // ── Hardcoded Lucide icon paths for diagram nodes ─────────────────────────────
@@ -790,7 +791,7 @@ if (!data.steps || !data.steps.length) return;
 const result = renderSwimlane(data, canvas);
 if (!result) return;
 
-const { svg, clickHandlers, nodeGroups, connEls } = result;
+const { svg, clickHandlers, nodeGroups, connEls, stepLayout: mainStepLayout } = result;
 
 // Escape HTML for safe innerHTML use
 const esc = s => String(s)
@@ -820,6 +821,141 @@ function popupIconHtml(actionType) {
     return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none"
         stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
         style="flex-shrink:0;vertical-align:middle">${pHtml}</svg>`;
+}
+
+// ── Mini-flow diagram ─────────────────────────────────────────────────────────
+// Renders a compact inline SVG showing the related steps and connections
+// without lane bands or empty space — used in the card panel header.
+function renderMiniFlow(relSteps, clickedId, relConns, mainLayout) {
+    if (relSteps.length < 2) return '';
+
+    // Mirror the main diagram spatial layout exactly.
+    // Each step's position comes from mainLayout (stepLayout from renderSwimlane):
+    //   lr = lane_row within the lane  (captures decision branches on separate rows)
+    //   lc = lane_col within the lane
+    // Row in mini = compound key (lane_index, lane_row) → compressed to 0,1,2…
+    // Col in mini = lane_col → compressed to 0,1,2…
+    const allLaneOrder = data.lanes.map(l => l.id);
+    const relLaneIds   = [...new Set(relSteps.map(s => s.lane_id))]
+        .sort((a, b) => allLaneOrder.indexOf(a) - allLaneOrder.indexOf(b));
+    const laneIdx = new Map(relLaneIds.map((lid, i) => [lid, i]));
+
+    const rowKeyOf = s => {
+        const li = laneIdx.get(s.lane_id) ?? 0;
+        const lr = mainLayout?.get(s.id)?.lane_row ?? 0;
+        return `${li},${lr}`;
+    };
+    const rowKeys = [...new Set(relSteps.map(rowKeyOf))].sort((a, b) => {
+        const [li1, lr1] = a.split(',').map(Number);
+        const [li2, lr2] = b.split(',').map(Number);
+        return li1 !== li2 ? li1 - li2 : lr1 - lr2;
+    });
+    const miniRowOf = new Map(rowKeys.map((k, i) => [k, i]));
+
+    const colKeys = [...new Set(relSteps.map(s => mainLayout?.get(s.id)?.lane_col ?? 0))]
+        .sort((a, b) => a - b);
+    const miniColOf = new Map(colKeys.map((k, i) => [k, i]));
+
+    const layout = new Map();
+    relSteps.forEach(s => layout.set(s.id, {
+        row: miniRowOf.get(rowKeyOf(s)) ?? 0,
+        col: miniColOf.get(mainLayout?.get(s.id)?.lane_col ?? 0) ?? 0,
+    }));
+
+    const NW = 48, NH = 28, CG = 28, RG = 36, P = 8;
+    const cols = [...layout.values()].reduce((m, v) => Math.max(m, v.col), 0) + 1;
+    const rows = [...layout.values()].reduce((m, v) => Math.max(m, v.row), 0) + 1;
+    const W    = P + cols * NW + (cols - 1) * CG + P;
+    const H    = P + rows * NH + (rows - 1) * RG + P;
+
+    const nx = c  => P + c * (NW + CG);
+    const ny = r  => P + r * (NH + RG);
+    const cx = c  => nx(c) + NW / 2;
+    const cy = r  => ny(r) + NH / 2;
+
+    // Monochrome — shape only, no action-type colour
+    const FILL   = '#f3f4f6';
+    const STROKE = '#9ca3af';
+    const CLICKED_STROKE = '#374151';
+
+    const LINE_C = '#9ca3af'; // single neutral colour for all connectors
+    const mk = c => `<marker id="mf${c.replace('#','')}" markerWidth="7" markerHeight="5"
+        refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="${c}"/></marker>`;
+
+    let defs = `<defs>${mk(LINE_C)}</defs>`;
+    let lines = '', shapes = '';
+
+    // Connections — all the same colour, loop-backs dashed
+    relConns.forEach(c => {
+        const f = layout.get(c.from), t = layout.get(c.to);
+        if (!f || !t) return;
+        const isBack = f.col > t.col || (f.col === t.col && f.row >= t.row);
+        const da = isBack ? '4 2' : 'none';
+        let pathD, lx, ly;
+        if (f.row === t.row) {
+            // Same row — straight horizontal
+            const x1 = nx(f.col) + NW, y1 = cy(f.row);
+            const x2 = nx(t.col) - 6,  y2 = cy(t.row);
+            pathD = `M${x1},${y1} L${x2},${y2}`;
+            lx = (x1+x2)/2; ly = y1 - 8;
+        } else if (f.col === t.col) {
+            // Same column — straight vertical
+            const x1 = cx(f.col), y1 = ny(f.row) + NH;
+            const x2 = cx(t.col), y2 = ny(t.row) - 6;
+            pathD = `M${x1},${y1} L${x2},${y2}`;
+            lx = x1 + 4; ly = (y1+y2)/2;
+        } else {
+            // Different row and column — orthogonal L-shape
+            // Exit bottom of source → across at midpoint y → down to target
+            const sx = cx(f.col), sy = ny(f.row) + NH;
+            const tx_ = cx(t.col), ty_ = ny(t.row) - 6;
+            const midY = (sy + ty_) / 2;
+            pathD = `M${sx},${sy} L${sx},${midY} L${tx_},${midY} L${tx_},${ty_}`;
+            lx = (sx + tx_) / 2; ly = midY - 8;
+        }
+        lines += `<path d="${pathD}" fill="none"
+            stroke="${LINE_C}" stroke-width="1.5" stroke-dasharray="${da}"
+            marker-end="url(#mf${LINE_C.replace('#','')})"/>`;
+        // Labels omitted — step numbers in the card list below serve as the key
+    });
+
+    // Nodes
+    relSteps.forEach(s => {
+        const pos = layout.get(s.id);
+        if (!pos) return;
+        const x = nx(pos.col), y = ny(pos.row);
+        const isClicked = s.id === clickedId;
+        const st = isClicked ? CLICKED_STROKE : STROKE;
+        const sw = isClicked ? 2 : 1;
+
+        if (s.step_type === 'decision' || s.step_type === 'parallel') {
+            const mx = x + NW/2, my = y + NH/2;
+            shapes += `<polygon points="${mx},${y} ${x+NW},${my} ${mx},${y+NH} ${x},${my}"
+                fill="${FILL}" stroke="${st}" stroke-width="${sw}"/>`;
+        } else {
+            const rx = (s.step_type==='start'||s.step_type==='end') ? NH/2 : 3;
+            shapes += `<rect x="${x}" y="${y}" width="${NW}" height="${NH}" rx="${rx}"
+                fill="${FILL}" stroke="${st}" stroke-width="${sw}"/>`;
+        }
+
+        // Step number centred in the shape — title is in the card list below
+        shapes += `<text x="${cx(pos.col)}" y="${cy(pos.row)+1}"
+            text-anchor="middle" dominant-baseline="middle"
+            font-family="IBM Plex Sans,sans-serif"
+            font-size="10" font-weight="700" fill="${st}">${s.step_number}</text>`;
+    });
+
+    // Scale to fit within both max-width and max-height simultaneously
+    // (same logic as CSS object-fit:contain) — never overflows the panel.
+    const MAX_H = 140;
+    const MAX_W = 278; // panel inner width (310px - padding)
+    const scale  = Math.min(MAX_W / W, MAX_H / H);
+    const rW     = Math.round(W * scale);
+    const rH     = Math.round(H * scale);
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"
+        width="${rW}" height="${rH}"
+        style="display:block;max-width:100%;">${defs}${lines}${shapes}</svg>`;
 }
 
 // ── Focus highlight ───────────────────────────────────────────────────────────
@@ -853,32 +989,58 @@ function clearHighlight() {
     });
 }
 
-// Scroll the page so all highlighted steps are visible after clicking.
-// Uses getBoundingClientRect() on the actual SVG groups for real page positions.
-function scrollToHighlighted(related) {
-    let minPageY = Infinity, maxPageY = -Infinity;
-    related.forEach(id => {
-        const g = nodeGroups.get(id);
-        if (!g) return;
-        const r = g.getBoundingClientRect();
-        minPageY = Math.min(minPageY, r.top  + window.scrollY);
-        maxPageY = Math.max(maxPageY, r.bottom + window.scrollY);
-    });
-    if (minPageY === Infinity) return;
+// Scroll (and zoom mildly if needed) so highlighted steps are visible.
+// clickedId: the step actually clicked — used as fallback when span is too large.
+function scrollToHighlighted(related, clickedId) {
+    const padding   = 150; // clears fixed header (~130px) + breathing room
+    const vpH       = window.innerHeight;
+    const available = vpH - padding * 2;
 
-    const rangeH  = maxPageY - minPageY;
-    const vpH     = window.innerHeight;
-    const padding = 80; // breathing room above the topmost step
+    const getRange = () => {
+        let minY = Infinity, maxY = -Infinity;
+        related.forEach(id => {
+            const g = nodeGroups.get(id);
+            if (!g) return;
+            const r = g.getBoundingClientRect();
+            minY = Math.min(minY, r.top    + window.scrollY);
+            maxY = Math.max(maxY, r.bottom + window.scrollY);
+        });
+        return { minY, maxY };
+    };
 
-    let targetY;
-    if (rangeH < vpH - padding * 2) {
-        // All steps fit — centre the group vertically in the viewport
-        targetY = minPageY - (vpH - rangeH) / 2;
-    } else {
-        // Steps span more than a screenful — scroll to show the top of the group
-        targetY = minPageY - padding;
+    const { minY, maxY } = getRange();
+    if (minY === Infinity) return;
+
+    const rangeH     = maxY - minY;
+    const neededZoom = zoom * available / rangeH;
+
+    if (rangeH > available && neededZoom < zoom * 0.65) {
+        // Steps span too much — zooming out would make nodes tiny and leave
+        // large empty lanes visible. Instead, centre on the CLICKED step and
+        // let the card panel explain what's connected elsewhere.
+        const g = nodeGroups.get(clickedId);
+        if (g) {
+            const r = g.getBoundingClientRect();
+            window.scrollTo({ top: Math.max(0, r.top + window.scrollY - vpH / 2 + 40), behavior: 'smooth' });
+        }
+        return;
     }
-    window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+
+    if (rangeH > available) {
+        // Mild zoom-out (≤35% reduction) — acceptable
+        applyZoom(Math.max(0.2, neededZoom));
+        requestAnimationFrame(() => {
+            const { minY: y0, maxY: y1 } = getRange();
+            const h = y1 - y0;
+            window.scrollTo({ top: Math.max(0, y0 - Math.max(padding, (vpH - h) / 2)), behavior: 'smooth' });
+        });
+    } else {
+        // All steps already fit — just centre the group in the viewport
+        window.scrollTo({
+            top:      Math.max(0, minY - (vpH - rangeH) / 2),
+            behavior: 'smooth',
+        });
+    }
 }
 
 // ── Draggable detail panel ────────────────────────────────────────────────────
@@ -899,10 +1061,10 @@ detail?.addEventListener('mousedown', e => {
 });
 
 document.addEventListener('mousemove', e => {
-    if (!_dd || !wrap || !detail) return;
-    const wr = wrap.getBoundingClientRect();
-    detail.style.left = Math.max(0, e.clientX - wr.left + wrap.scrollLeft - _dox) + 'px';
-    detail.style.top  = Math.max(0, e.clientY - wr.top  + wrap.scrollTop  - _doy) + 'px';
+    if (!_dd || !detail) return;
+    // Panel is position:fixed — drag in viewport coordinates
+    detail.style.left = Math.max(0, e.clientX - _dox) + 'px';
+    detail.style.top  = Math.max(0, e.clientY - _doy) + 'px';
 });
 
 document.addEventListener('mouseup', () => {
@@ -944,11 +1106,11 @@ clickHandlers.forEach(({ el: g, step }) => {
 
         if (activeStepId === step.id) {
             clearHighlight();
-            if (detail) detail.hidden = true;
+            if (detail) detail.style.display = 'none';
             return;
         }
         const related = applyHighlight(step.id);
-        scrollToHighlighted(related);
+        scrollToHighlighted(related, step.id);
 
         if (!detail) return;
 
@@ -957,14 +1119,20 @@ clickHandlers.forEach(({ el: g, step }) => {
             .filter(s => related.has(s.id))
             .sort((a, b) => a.step_number - b.step_number);
 
-        const count = relSteps.length;
-        const cards = relSteps.map((s, i) => stepCardHtml(s, i === count - 1)).join('');
+        const count    = relSteps.length;
+        const cards    = relSteps.map((s, i) => stepCardHtml(s, i === count - 1)).join('');
 
+        // Mini flow: connections between related steps only
+        const relConns = data.connections.filter(c => related.has(c.from) && related.has(c.to));
+        const miniSvg  = renderMiniFlow(relSteps, step.id, relConns, mainStepLayout);
+
+        // Panel uses flex-column so the card list fills all remaining space
+        // without a competing hardcoded max-height — works at any viewport size.
         detail.innerHTML = `
             <div data-drag-handle style="display:flex;justify-content:space-between;align-items:center;
                         padding-bottom:0.45rem;margin-bottom:0.1rem;
                         border-bottom:2px solid var(--border);
-                        cursor:grab;user-select:none;">
+                        cursor:grab;user-select:none;flex-shrink:0;">
                 <span style="display:flex;align-items:center;gap:0.4rem;">
                     <i data-lucide="grip-vertical" style="width:0.9rem;height:0.9rem;color:var(--muted);flex-shrink:0;"></i>
                     <span style="font-size:0.7rem;font-weight:700;color:var(--muted);
@@ -975,37 +1143,45 @@ clickHandlers.forEach(({ el: g, step }) => {
                         color:var(--muted);padding:0;line-height:1;display:flex;">
                     <i data-lucide="x" style="width:1rem;height:1rem;"></i></button>
             </div>
-            <div style="overflow-y:auto;max-height:340px;">${cards}</div>`;
+            ${miniSvg ? `<div style="padding:0.6rem 0;border-bottom:1px solid var(--border);
+                                     background:var(--bg);border-radius:6px;margin-bottom:0.4rem;flex-shrink:0;">
+                ${miniSvg}</div>` : ''}
+            <div style="overflow-y:auto;min-height:0;flex:1;">${cards}</div>`;
 
         // Position the panel within the VISIBLE VIEWPORT, not the full wrap height.
         // Since the page scrolls (not the wrap), we work in viewport coordinates
-        // and convert back to wrap-relative (absolute) by subtracting wrapRect.
-        const wrapRect   = wrap.getBoundingClientRect();
-        const PANEL_W    = 310;
-        const PANEL_H    = 400;
-        const vpW = window.innerWidth;
-        const vpH = window.innerHeight;
+        const PANEL_W  = 310;
+        const vpW      = window.innerWidth;
+        const vpH      = window.innerHeight;
+        const TOP_MIN  = 150;
+        const panelOpen = detail.style.display === 'flex';
 
-        // Choose x: opposite half from the click, clamped to viewport
-        let vpX = e.clientX > vpW / 2
-            ? Math.max(10, e.clientX - PANEL_W - 20)
-            : Math.min(vpW - PANEL_W - 10, e.clientX + 20);
+        if (!panelOpen) {
+            // First click — position the panel in the opposite corner from the click
+            const vpX = e.clientX > vpW / 2
+                ? Math.max(10, e.clientX - PANEL_W - 20)
+                : Math.min(vpW - PANEL_W - 10, e.clientX + 20);
+            const vpY = Math.max(TOP_MIN,
+                e.clientY > vpH * 0.6
+                    ? Math.max(TOP_MIN, e.clientY - 420)
+                    : e.clientY + 20
+            );
+            const availH = vpH - vpY - 20;
+            detail.style.left          = Math.max(0, vpX) + 'px';
+            detail.style.top           = vpY + 'px';
+            detail.style.width         = PANEL_W + 'px';
+            detail.style.height        = availH + 'px'; // fill available height so card list expands
+            detail.style.maxHeight     = availH + 'px';
+            detail.style.overflowY     = 'hidden';
+            detail.style.flexDirection = 'column';
+        }
+        // Subsequent clicks on different steps: keep position, just refresh content.
 
-        // Choose y: above or below click, kept inside the viewport
-        let vpY = e.clientY > vpH / 2
-            ? Math.max(10, e.clientY - PANEL_H - 20)
-            : Math.min(vpH - PANEL_H - 10, e.clientY + 20);
-
-        // Convert viewport coords → wrap-relative absolute coords
-        // (wrapRect.top already accounts for page scroll via getBoundingClientRect)
-        detail.style.left  = Math.max(0, vpX - wrapRect.left) + 'px';
-        detail.style.top   = Math.max(0, vpY - wrapRect.top)  + 'px';
-        detail.style.width = PANEL_W + 'px';
-        detail.hidden = false;
+        detail.style.display = 'flex';
         if (typeof lucide !== 'undefined') lucide.createIcons({ nameAttr: 'data-lucide', nodes: [detail] });
 
         document.getElementById('closeDetail')
-            ?.addEventListener('click', () => { detail.hidden = true; clearHighlight(); });
+            ?.addEventListener('click', () => { detail.style.display = 'none'; detail.style.height = ''; clearHighlight(); });
     });
 });
 
@@ -1014,7 +1190,7 @@ clickHandlers.forEach(({ el: g, step }) => {
 wrap?.addEventListener('click', e => {
     if (_ddEnded) return; // suppress click that fires immediately after drag ends
     if (e.target === wrap || e.target.closest('#swimlane-canvas svg')) {
-        if (detail) detail.hidden = true;
+        if (detail) detail.style.display = 'none';
         clearHighlight();
     }
 });
