@@ -948,14 +948,14 @@ function renderMiniFlow(relSteps, clickedId, relConns, mainLayout) {
     // Scale to fit within both max-width and max-height simultaneously
     // (same logic as CSS object-fit:contain) — never overflows the panel.
     const MAX_H = 140;
-    const MAX_W = 278; // panel inner width (310px - padding)
+    const MAX_W = 262; // panel inner width minus a small safety margin
     const scale  = Math.min(MAX_W / W, MAX_H / H);
     const rW     = Math.round(W * scale);
     const rH     = Math.round(H * scale);
 
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"
         width="${rW}" height="${rH}"
-        style="display:block;max-width:100%;">${defs}${lines}${shapes}</svg>`;
+        style="display:block;max-width:100%;overflow:hidden;">${defs}${lines}${shapes}</svg>`;
 }
 
 // ── Focus highlight ───────────────────────────────────────────────────────────
@@ -1143,8 +1143,9 @@ clickHandlers.forEach(({ el: g, step }) => {
                         color:var(--muted);padding:0;line-height:1;display:flex;">
                     <i data-lucide="x" style="width:1rem;height:1rem;"></i></button>
             </div>
-            ${miniSvg ? `<div style="padding:0.6rem 0;border-bottom:1px solid var(--border);
-                                     background:var(--bg);border-radius:6px;margin-bottom:0.4rem;flex-shrink:0;">
+            ${miniSvg ? `<div style="padding:0.5rem 0;border-bottom:1px solid var(--border);
+                                     background:var(--bg);border-radius:6px;margin-bottom:0.4rem;
+                                     flex-shrink:0;overflow:hidden;">
                 ${miniSvg}</div>` : ''}
             <div style="overflow-y:auto;min-height:0;flex:1;">${cards}</div>`;
 
