@@ -144,7 +144,7 @@ ob_start();
                 'file'    => 'seed_samples.sql',
                 'status'  => 'optional',
                 'title'   => 'Load / refresh sample process maps',
-                'detail'  => 'Deletes and recreates the three sample diagrams: <em>Housing Repair — Quick View</em>, <em>Customer First — Housing Repairs</em>, and <em>Purchase to Pay</em>. Run this after deploy if you want the latest sample content, or use the <a href="/setup.php">Setup page</a> Load samples button.',
+                'detail'  => 'Deletes and recreates the three sample diagrams: <em>Housing Repair — Quick View</em>, <em>Customer First — Housing Repairs</em>, and <em>Purchase to Pay</em>. Run this after deploy if you want the latest sample content, or use the <strong>Load sample documents</strong> button on the <a href="/admin.php">Admin page</a>.',
                 'env'     => 'Local + Hostinger',
             ],
             [

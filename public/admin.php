@@ -8,6 +8,25 @@ require_min_role('admin');
 
 $pdo = db();
 
+// ── Handle load samples ──────────────────────────────────────────────────────
+$samplesNotice = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'load_samples') {
+    if (!csrf_verify()) { redirect('/admin.php'); }
+    try {
+        ensure_schema($pdo);
+        run_sql_file($pdo, dirname(__DIR__) . '/sql/seed_samples.sql');
+        $samplesNotice = ['success', 'Sample documents loaded successfully.'];
+    } catch (Throwable $e) {
+        $samplesNotice = ['error', 'Could not load samples: ' . $e->getMessage()];
+    }
+    $_SESSION['admin_notice_samples'] = $samplesNotice;
+    redirect('/admin.php');
+}
+if (isset($_SESSION['admin_notice_samples'])) {
+    $samplesNotice = $_SESSION['admin_notice_samples'];
+    unset($_SESSION['admin_notice_samples']);
+}
+
 // ── Handle role change ────────────────────────────────────────────────────────
 $roleNotice = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'change_role') {
@@ -102,9 +121,15 @@ ob_start();
     <?= h($roleNotice[1]) ?>
 </div>
 <?php endif; ?>
+<?php if ($samplesNotice): ?>
+<div class="notice" style="background:<?= $samplesNotice[0] === 'success' ? 'var(--success)' : 'var(--danger)' ?>;
+     color:#fff;padding:0.6rem 1rem;border-radius:var(--r);margin-bottom:1rem;font-size:0.875rem;">
+    <?= h($samplesNotice[1]) ?>
+</div>
+<?php endif; ?>
 
 <!-- ── Summary stat links ─────────────────────────────────────────── -->
-<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:1rem;margin-bottom:1.5rem;">
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.5rem;">
 
     <a href="/documents.php" style="text-decoration:none;color:inherit;
         background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
@@ -154,14 +179,6 @@ ob_start();
         <div style="font-size:0.75rem;margin-top:0.5rem;color:var(--accent);font-weight:600;">View report &rarr;</div>
     </a>
 
-    <a href="/setup.php" style="text-decoration:none;color:inherit;
-        background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
-        padding:1.1rem 1.25rem;display:block;transition:border-color .15s;"
-        onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
-        <i data-lucide="settings" style="width:1.75rem;height:1.75rem;color:var(--muted);display:block;margin-bottom:0.5rem;"></i>
-        <div style="font-size:0.8rem;color:var(--muted);margin-top:0.2rem;">Setup &amp; seed data</div>
-        <div style="font-size:0.75rem;margin-top:0.5rem;color:var(--accent);font-weight:600;">Open setup &rarr;</div>
-    </a>
 
 </div>
 
@@ -322,6 +339,24 @@ ob_start();
         <span style="font-size:0.8rem;color:var(--accent);white-space:nowrap;">View &rarr;</span>
     </a>
     <?php endforeach; ?>
+</div>
+
+<!-- ── Sample data ────────────────────────────────────────────────── -->
+<div class="card" style="padding:1rem 1.25rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0 0 0.2rem;font-size:1rem;">Sample process maps</h2>
+            <p style="margin:0;font-size:0.85rem;color:var(--muted);">
+                Load three worked example diagrams — Housing Repair Quick View, Customer First, and Purchase to Pay.
+                Safe to run again; replaces only these samples and never touches your own maps.
+            </p>
+        </div>
+        <form method="post" style="flex-shrink:0;">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="load_samples">
+            <button class="btn btn-secondary btn-sm" type="submit">Load sample documents</button>
+        </form>
+    </div>
 </div>
 
 <script>

@@ -1544,19 +1544,18 @@ function render_layout(string $title, string $content, array $options = []): voi
 
         /* ── Notices ─────────────────────────────────────────── */
         .notice {
-            padding: 1rem 1.25rem;
+            padding: 0.875rem 1.25rem;
             border-radius: var(--r);
-            border-left: 4px solid var(--warning);
-            background: oklch(97% 0.025 68);
-            color: oklch(28% 0.1 68);
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
             margin-bottom: 1.25rem;
             font-size: 0.9375rem;
         }
 
         .notice-success {
-            border-left-color: var(--success);
-            background: oklch(97% 0.02 155);
-            color: oklch(28% 0.1 155);
+            border-color: oklch(80% 0.08 155);
+            background: oklch(98% 0.012 155);
         }
 
         /* ── Home empty state ───────────────────────────────── */

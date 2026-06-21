@@ -67,7 +67,7 @@ ob_start();
 <div class="card">
     <h2>First-time setup</h2>
     <p>
-        Creates the <code><?= h(db_config()['database'] ?? 'as_is') ?></code> database from your <code>.env</code>,
+        Creates the <code><?= h(db_config()['database'] ?? 'as_is') ?></code> database from the <code>.env</code>,
         runs the schema, and loads a minimal starter document.
         Safe to re-run — existing documents are not overwritten.
     </p>
