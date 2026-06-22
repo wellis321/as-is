@@ -35,6 +35,21 @@ $actionType = $isEdit ? ($step['action_type'] ?? 'general') : 'general';
 $laneId     = $isEdit ? (int) $step['lane_id'] : (int) ($lanes[0]['id'] ?? 0);
 $selectedSystemIds = $isEdit ? fetch_step_system_ids($pdo, $stepId) : [];
 
+// Pre-fill from AI-assist query params (new steps only, never overrides a real edit)
+if (!$isEdit && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    if (isset($_GET['prefill_step_number'])) $stepNumber  = max(1, (int) $_GET['prefill_step_number']);
+    if (isset($_GET['prefill_title']))       $title       = substr(trim((string) $_GET['prefill_title']), 0, 120);
+    if (isset($_GET['prefill_description'])) $description = substr(trim((string) $_GET['prefill_description']), 0, 500);
+    if (isset($_GET['prefill_step_type']))   $stepType    = valid_step_type((string) $_GET['prefill_step_type']);
+    if (isset($_GET['prefill_action_type'])) $actionType  = valid_action_type((string) $_GET['prefill_action_type']);
+    if (isset($_GET['prefill_lane_id'])) {
+        $prefillLaneId = (int) $_GET['prefill_lane_id'];
+        if (in_array($prefillLaneId, array_map(fn ($l) => (int) $l['id'], $lanes), true)) {
+            $laneId = $prefillLaneId;
+        }
+    }
+}
+
 if ($lanes === []) {
     ob_start();
     ?>

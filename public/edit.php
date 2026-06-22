@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
+require_once dirname(__DIR__) . '/includes/ai.php';
 
 require_min_role('editor');
 
@@ -375,6 +376,199 @@ $laneColours = ['#ffffff', '#e8eaed'];
         <?php endif; ?>
     </div>
 
+    <!-- AI Assist ─────────────────────────────────────────────── -->
+    <details class="ai-assist-panel" style="margin-bottom:1rem;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <summary style="display:flex;align-items:center;gap:0.5rem;padding:0.65rem 1rem;
+                        cursor:pointer;user-select:none;font-size:0.875rem;font-weight:600;
+                        background:var(--bg-subtle,var(--bg));list-style:none;">
+            <i data-lucide="sparkles" style="width:1rem;height:1rem;color:var(--accent);flex-shrink:0;"></i>
+            Build diagram from description
+            <span style="font-weight:400;color:var(--muted);margin-left:0.25rem;">&mdash; AI reads your text and creates the swimlanes and steps</span>
+        </summary>
+        <div style="padding:1rem;border-top:1px solid var(--border);">
+            <?php if ($hasLanes): ?>
+            <p style="margin:0 0 0.6rem;font-size:0.8125rem;color:var(--muted);">
+                Describe what happens in plain language. AI will suggest steps for your existing swimlanes
+                (<strong><?= h(implode(', ', array_map(fn ($l) => $l['name'], $lanes))) ?></strong>)
+                and add them all in one go.
+            </p>
+            <?php else: ?>
+            <p style="margin:0 0 0.6rem;font-size:0.8125rem;color:var(--muted);">
+                Describe the whole process in plain language — who does what and in what order.
+                AI will work out the swimlanes and steps and create everything at once.
+                You do not need to set up swimlanes first.
+            </p>
+            <?php endif; ?>
+            <textarea id="ai-description" rows="4"
+                      style="width:100%;box-sizing:border-box;resize:vertical;font-size:0.875rem;"
+                      placeholder="e.g. The tenant contacts Customer First who talks through the issue. Using the diagnostic tool the Customer First advisor creates a job, which is then sent to the scheduling system."></textarea>
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.6rem;flex-wrap:wrap;">
+                <button type="button" id="ai-generate-btn" class="btn btn-secondary btn-sm">Generate</button>
+                <?php
+                $aiLabel = '';
+                if (strlen(resolve_groq_key()) > 10)   $aiLabel = 'Groq — Llama 3.3 70B';
+                elseif (strlen(resolve_gemini_key()) > 10) $aiLabel = 'Gemini 2.0 Flash';
+                if ($aiLabel): ?>
+                    <span style="font-size:0.775rem;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.5rem;"><?= h($aiLabel) ?></span>
+                <?php endif; ?>
+                <span id="ai-status" style="font-size:0.8rem;color:var(--muted);"></span>
+            </div>
+            <div id="ai-results" style="margin-top:0.75rem;"></div>
+        </div>
+    </details>
+    <script>
+    (function () {
+        const btn          = document.getElementById('ai-generate-btn');
+        const status       = document.getElementById('ai-status');
+        const results = document.getElementById('ai-results');
+        const slug    = <?= json_encode($document['slug']) ?>;
+        const csrf    = <?= json_encode(csrf_token()) ?>;
+
+        function esc(str) {
+            const d = document.createElement('div');
+            d.textContent = String(str);
+            return d.innerHTML;
+        }
+
+        function renderResults(data) {
+            let html = '';
+
+            // Show suggested lanes (only when none existed before)
+            if (data.lanes && data.lanes.length > 0) {
+                html += '<div style="margin-bottom:0.75rem;">' +
+                        '<div style="font-size:0.775rem;font-weight:600;color:var(--muted);text-transform:uppercase;' +
+                        'letter-spacing:0.04em;margin-bottom:0.35rem;">Swimlanes to create</div>' +
+                        '<div style="display:flex;flex-wrap:wrap;gap:0.35rem;">' +
+                        data.lanes.map(l => '<span style="background:var(--bg);border:1px solid var(--border);' +
+                            'border-radius:6px;padding:0.25rem 0.6rem;font-size:0.8rem;">' + esc(l) + '</span>').join('') +
+                        '</div></div>';
+            }
+
+            // Show step preview cards
+            html += '<div style="display:flex;flex-direction:column;gap:0.4rem;">' +
+                data.steps.map((step, i) =>
+                    '<div style="border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.85rem;background:var(--bg);">' +
+                    '<div style="display:flex;align-items:baseline;gap:0.5rem;">' +
+                    '<span style="font-size:0.75rem;color:var(--muted);flex-shrink:0;">' + esc(step.step_number) + '.</span>' +
+                    '<span style="font-weight:600;font-size:0.875rem;">' + esc(step.title) + '</span>' +
+                    '</div>' +
+                    '<div style="font-size:0.775rem;color:var(--muted);margin:0.1rem 0 0.25rem 1.35rem;">' +
+                    esc(step.lane_name) + ' &middot; ' + esc(step.step_type) + ' &middot; ' + esc(step.action_type) +
+                    '</div>' +
+                    '<div style="font-size:0.8rem;color:var(--text,inherit);margin-left:1.35rem;">' + esc(step.description) + '</div>' +
+                    '</div>'
+                ).join('') +
+                '</div>';
+
+            // Create all button
+            const connCount  = (data.connections || []).length;
+            const laneCount2 = (data.lanes || []).length;
+            let btnLabel = 'Create ';
+            if (laneCount2) btnLabel += laneCount2 + ' lane' + (laneCount2 !== 1 ? 's' : '') + ' + ';
+            btnLabel += data.steps.length + ' step' + (data.steps.length !== 1 ? 's' : '');
+            if (connCount)  btnLabel += ' + ' + connCount + ' connection' + (connCount !== 1 ? 's' : '');
+
+            html += '<div style="margin-top:0.85rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">' +
+                    '<button type="button" id="ai-create-btn" class="btn btn-sm" ' +
+                    'style="background:var(--accent);color:#fff;border-color:var(--accent);">' +
+                    btnLabel +
+                    '</button>' +
+                    '<span id="ai-create-status" style="font-size:0.8rem;color:var(--muted);"></span>' +
+                    '</div>';
+
+            results.innerHTML = html;
+
+            // Wire up create button
+            document.getElementById('ai-create-btn').addEventListener('click', async () => {
+                const createBtn    = document.getElementById('ai-create-btn');
+                const createStatus = document.getElementById('ai-create-status');
+                createBtn.disabled = true;
+                createStatus.textContent = 'Creating…';
+
+                try {
+                    const body = new FormData();
+                    body.append('csrf_token',  csrf);
+                    body.append('slug',        slug);
+                    body.append('lanes',       JSON.stringify(data.lanes || []));
+                    body.append('steps',       JSON.stringify(data.steps));
+                    body.append('connections', JSON.stringify(data.connections || []));
+
+                    const resp = await fetch('/ai-batch-create.php', { method: 'POST', body });
+                    const text = await resp.text();
+                    console.log('ai-batch-create raw response:', text);
+
+                    let result;
+                    try {
+                        result = JSON.parse(text);
+                    } catch (parseErr) {
+                        createStatus.textContent = 'Server returned unexpected output — check console for details.';
+                        createBtn.disabled = false;
+                        return;
+                    }
+
+                    if (!resp.ok || result.error) {
+                        createStatus.textContent = result.error || 'Something went wrong (HTTP ' + resp.status + ').';
+                        createBtn.disabled = false;
+                        return;
+                    }
+
+                    // href-only hash changes don't reload; force a full navigation
+                    const dest = new URL(result.redirect, window.location.href);
+                    if (dest.pathname + dest.search === window.location.pathname + window.location.search) {
+                        window.location.reload();
+                    } else {
+                        window.location.href = result.redirect;
+                    }
+                } catch (err) {
+                    console.error('ai-batch-create fetch error:', err);
+                    createStatus.textContent = 'Network error — check console for details.';
+                    createBtn.disabled = false;
+                }
+            });
+        }
+
+        btn.addEventListener('click', async () => {
+            const description = document.getElementById('ai-description').value.trim();
+            if (!description) { status.textContent = 'Write a description first.'; return; }
+
+            btn.disabled = true;
+            status.textContent = 'Thinking… this may take 10–30 seconds';
+            results.innerHTML = '';
+
+            try {
+                const body = new FormData();
+                body.append('csrf_token',  csrf);
+                body.append('slug',        slug);
+                body.append('description', description);
+
+                const resp = await fetch('/ai-parse.php', { method: 'POST', body });
+                const data = await resp.json();
+
+                if (!resp.ok || data.error) {
+                    status.textContent = data.error || 'Something went wrong.';
+                    if (data.hint === 'install') {
+                        status.innerHTML += ' — <a href="/ai-settings.php">Configure AI</a>';
+                    }
+                    return;
+                }
+
+                const laneCount = (data.lanes || []).length;
+                status.textContent = (laneCount ? laneCount + ' lane' + (laneCount !== 1 ? 's' : '') + ' + ' : '') +
+                                     data.steps.length + ' step' + (data.steps.length !== 1 ? 's' : '') +
+                                     ' suggested (' + (data.model || 'AI') + ')';
+                renderResults(data);
+
+            } catch (err) {
+                status.textContent = err.message || 'Could not reach the AI.';
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+
+    }());
+    </script>
+
     <?php if ($lanes === []): ?>
         <div class="empty-state">
             <p class="empty-state-title">Add swimlanes first</p>
@@ -457,6 +651,159 @@ $laneColours = ['#ffffff', '#e8eaed'];
             <span>Steps added — now <a href="#connections" style="color:var(--accent);font-weight:600;">add connections</a> to turn them into a flow diagram.</span>
         </div>
     <?php endif; ?>
+
+    <?php if ($hasSteps): ?>
+    <!-- AI Refine ──────────────────────────────────────────────── -->
+    <details style="margin-top:1rem;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <summary style="display:flex;align-items:center;gap:0.5rem;padding:0.65rem 1rem;
+                        cursor:pointer;user-select:none;font-size:0.875rem;font-weight:600;
+                        background:var(--bg-subtle,var(--bg));list-style:none;">
+            <i data-lucide="wand-2" style="width:1rem;height:1rem;color:var(--accent);flex-shrink:0;"></i>
+            Refine diagram with AI
+            <span style="font-weight:400;color:var(--muted);margin-left:0.25rem;">&mdash; describe a change and AI will apply it</span>
+        </summary>
+        <div style="padding:1rem;border-top:1px solid var(--border);">
+            <p style="margin:0 0 0.6rem;font-size:0.8125rem;color:var(--muted);">
+                Describe what you want to add, change, or insert. For example:
+                <em>"Add a decision point after step 3 — if specialist work is needed, escalate to a contractor."</em>
+            </p>
+            <textarea id="ai-instruction" rows="3"
+                      style="width:100%;box-sizing:border-box;resize:vertical;font-size:0.875rem;"
+                      placeholder="e.g. Add a decision after the diagnostic step — if the repair is specialist, route to a contractor lane."></textarea>
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.6rem;flex-wrap:wrap;">
+                <button type="button" id="ai-refine-btn" class="btn btn-secondary btn-sm">Suggest changes</button>
+                <span id="ai-refine-status" style="font-size:0.8rem;color:var(--muted);"></span>
+            </div>
+            <div id="ai-refine-results" style="margin-top:0.75rem;"></div>
+        </div>
+    </details>
+    <script>
+    (function () {
+        // Wire mic button using the shared attachMic defined in the build panel script
+const btn     = document.getElementById('ai-refine-btn');
+        const status  = document.getElementById('ai-refine-status');
+        const results = document.getElementById('ai-refine-results');
+        const slug    = <?= json_encode($document['slug']) ?>;
+        const csrf    = <?= json_encode(csrf_token()) ?>;
+
+        function esc(str) { const d = document.createElement('div'); d.textContent = String(str); return d.innerHTML; }
+
+        btn.addEventListener('click', async () => {
+            const instruction = document.getElementById('ai-instruction').value.trim();
+            if (!instruction) { status.textContent = 'Describe the change first.'; return; }
+
+            btn.disabled = true;
+            status.textContent = 'Thinking… this may take 10–30 seconds';
+            results.innerHTML = '';
+
+            try {
+                const body = new FormData();
+                body.append('csrf_token',  csrf);
+                body.append('slug',        slug);
+                body.append('instruction', instruction);
+
+                const resp = await fetch('/ai-refine.php', { method: 'POST', body });
+                const data = await resp.json();
+
+                if (!resp.ok || data.error) {
+                    status.textContent = data.error || 'Something went wrong.';
+                    return;
+                }
+
+                const addL = (data.add_lanes        || []).length;
+                const addS = (data.add_steps        || []).length;
+                const addC = (data.add_connections  || []).length;
+                const remC = (data.remove_connections || []).length;
+
+                if (!addL && !addS && !addC && !remC) {
+                    status.textContent = 'AI suggested no changes — try rephrasing.';
+                    return;
+                }
+
+                status.textContent = [
+                    addL ? addL + ' lane' + (addL !== 1 ? 's' : '') : '',
+                    addS ? addS + ' step' + (addS !== 1 ? 's' : '') : '',
+                    addC ? addC + ' connection' + (addC !== 1 ? 's' : '') + ' added' : '',
+                    remC ? remC + ' connection' + (remC !== 1 ? 's' : '') + ' removed' : '',
+                ].filter(Boolean).join(' + ') + ' suggested (' + data.model + ')';
+
+                let html = '';
+
+                if (addL) html += '<div style="margin-bottom:0.5rem;font-size:0.8rem;"><strong>New lanes:</strong> ' + data.add_lanes.map(esc).join(', ') + '</div>';
+
+                if (addS) html += '<div style="margin-bottom:0.35rem;font-size:0.775rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;">Steps to add</div>' +
+                    '<div style="display:flex;flex-direction:column;gap:0.35rem;margin-bottom:0.5rem;">' +
+                    data.add_steps.map(s =>
+                        '<div style="border:1px solid var(--border);border-radius:8px;padding:0.55rem 0.8rem;background:var(--bg);">' +
+                        '<span style="font-weight:600;font-size:0.875rem;">' + esc(s.title) + '</span> ' +
+                        '<span style="font-size:0.775rem;color:var(--muted);">' + esc(s.lane_name) + ' · ' + esc(s.step_type) + ' · ' + esc(s.action_type) + '</span>' +
+                        '<div style="font-size:0.8rem;margin-top:0.15rem;">' + esc(s.description) + '</div></div>'
+                    ).join('') + '</div>';
+
+                if (addC) html += '<div style="font-size:0.8rem;margin-bottom:0.35rem;"><strong>Connections to add:</strong> ' +
+                    data.add_connections.map(c => esc(c.from) + '→' + esc(c.to) + (c.label ? ' <em>(' + esc(c.label) + ')</em>' : '')).join(', ') + '</div>';
+
+                if (remC) html += '<div style="font-size:0.8rem;margin-bottom:0.5rem;"><strong>Connections to remove:</strong> ' +
+                    data.remove_connections.map(c => esc(c.from) + '→' + esc(c.to)).join(', ') + '</div>';
+
+                const applyLabel = [
+                    addL ? 'add ' + addL + ' lane' + (addL !== 1 ? 's' : '') : '',
+                    addS ? 'add ' + addS + ' step' + (addS !== 1 ? 's' : '') : '',
+                    addC ? 'wire ' + addC + ' connection' + (addC !== 1 ? 's' : '') : '',
+                    remC ? 'remove ' + remC + ' connection' + (remC !== 1 ? 's' : '') : '',
+                ].filter(Boolean).join(', ');
+
+                html += '<div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.5rem;">' +
+                    '<button type="button" id="ai-refine-apply-btn" class="btn btn-sm" ' +
+                    'style="background:var(--accent);color:#fff;border-color:var(--accent);">Apply — ' + applyLabel + '</button>' +
+                    '<span id="ai-refine-apply-status" style="font-size:0.8rem;color:var(--muted);"></span></div>';
+
+                results.innerHTML = html;
+
+                document.getElementById('ai-refine-apply-btn').addEventListener('click', async () => {
+                    const applyBtn = document.getElementById('ai-refine-apply-btn');
+                    const applyStatus = document.getElementById('ai-refine-apply-status');
+                    applyBtn.disabled = true;
+                    applyStatus.textContent = 'Applying…';
+
+                    try {
+                        const b = new FormData();
+                        b.append('csrf_token',         csrf);
+                        b.append('slug',               slug);
+                        b.append('add_lanes',          JSON.stringify(data.add_lanes          || []));
+                        b.append('add_steps',          JSON.stringify(data.add_steps          || []));
+                        b.append('add_connections',    JSON.stringify(data.add_connections    || []));
+                        b.append('remove_connections', JSON.stringify(data.remove_connections || []));
+
+                        const r    = await fetch('/ai-refine-apply.php', { method: 'POST', body: b });
+                        const text = await r.text();
+                        let res;
+                        try { res = JSON.parse(text); } catch { applyStatus.textContent = 'Unexpected server response.'; applyBtn.disabled = false; return; }
+
+                        if (!r.ok || res.error) { applyStatus.textContent = res.error || 'Error (HTTP ' + r.status + ').'; applyBtn.disabled = false; return; }
+
+                        const dest = new URL(res.redirect, window.location.href);
+                        if (dest.pathname + dest.search === window.location.pathname + window.location.search) {
+                            window.location.reload();
+                        } else {
+                            window.location.href = res.redirect;
+                        }
+                    } catch (err) {
+                        applyStatus.textContent = 'Network error.';
+                        applyBtn.disabled = false;
+                    }
+                });
+
+            } catch (err) {
+                status.textContent = 'Could not reach the server.';
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    }());
+    </script>
+    <?php endif; ?>
+
     <?php endif; ?><?php // closes: if ($lanes===[]): ... elseif ... else: ?>
 </div>
 

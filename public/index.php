@@ -168,6 +168,39 @@ ob_start();
     </div>
 </section>
 
+<section class="landing-section landing-section-alt">
+    <div class="landing-section-inner">
+        <h2 class="landing-h2 landing-center">Build a diagram from a description</h2>
+        <p class="landing-center landing-intro">
+            You do not have to build a process map step by step. Describe what happens in plain language —
+            who does what and in what order — and AI will read it, identify the swimlanes, create all the
+            steps, and wire up the connections in one go.
+        </p>
+        <div class="landing-features">
+            <article class="landing-feature-card">
+                <i data-lucide="sparkles" class="lfc-icon"></i>
+                <h3>Describe, generate, review</h3>
+                <p>Open the <strong>Build diagram from description</strong> panel on the Edit page, type or paste a plain-English description, and click Generate. AI suggests lanes, steps, and connections. Review the preview, then click Create to build it all at once.</p>
+            </article>
+            <article class="landing-feature-card">
+                <i data-lucide="wand-2" class="lfc-icon"></i>
+                <h3>Refine an existing diagram</h3>
+                <p>Once a diagram has steps, the <strong>Refine diagram with AI</strong> panel appears. Describe the change you want — "add a decision after step 3 if the repair is specialist" — and AI suggests what to add, what connections to rewire, and applies everything in one click.</p>
+            </article>
+            <article class="landing-feature-card">
+                <i data-lucide="cpu" class="lfc-icon"></i>
+                <h3>Flexible AI source</h3>
+                <p>Add a free <strong>Groq</strong> or <strong>Gemini</strong> API key in AI settings for fast cloud generation with no local setup needed. Or run <strong>Ollama</strong> locally for fully offline use. The system automatically uses whichever is configured.</p>
+            </article>
+        </div>
+        <p class="landing-center" style="margin-top:1.5rem;font-size:0.875rem;margin-bottom:0;">
+            AI is an accelerator, not a replacement for the conversation. The description you give it
+            is still grounded in what you learned from staff — it just removes the manual step-by-step data entry.
+            Review the suggestions before applying them.
+        </p>
+    </div>
+</section>
+
 <section class="landing-section">
     <div class="landing-section-inner">
         <h2 class="landing-h2 landing-center">Why I built this</h2>
@@ -202,6 +235,9 @@ ob_start();
             <h2 class="landing-h2">What to expect</h2>
             <p>This is a working management system, not just a diagram viewer. Here is what you can do today:</p>
             <ul class="landing-checklist">
+                <li>Describe a process in plain language and let AI generate the swimlanes, steps, and connections in one go — no manual step-by-step entry</li>
+                <li>Refine an existing diagram by describing what to add or change — AI suggests the edits and applies them with a single click</li>
+                <li>Connect Groq (free, no credit card) or Gemini for fast cloud generation, or run Ollama locally for fully offline use</li>
                 <li>Export any diagram as a JSON file and re-import it elsewhere — share a process map with a colleague in a single file</li>
                 <li>Create a new map with a lane template — Housing repairs, Procurement, or your own — so lanes are ready instantly</li>
                 <li>Add steps with the next number pre-filled, clone similar steps in one click, and get prompted when connections are missing</li>

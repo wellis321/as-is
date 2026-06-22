@@ -229,6 +229,18 @@ function ensure_schema(PDO $pdo): void
     ensure_system_metadata($pdo);
     ensure_subprocess_types($pdo);
     ensure_notif_check_column($pdo);
+    ensure_user_ai_key_columns($pdo);
+}
+
+function ensure_user_ai_key_columns(PDO $pdo): void
+{
+    $col = $pdo->query("SHOW COLUMNS FROM users LIKE 'groq_api_key'")->fetch();
+    if ($col) return;
+    $pdo->exec(
+        "ALTER TABLE users
+            ADD COLUMN groq_api_key   VARCHAR(255) NULL DEFAULT NULL AFTER last_notif_check,
+            ADD COLUMN gemini_api_key VARCHAR(255) NULL DEFAULT NULL AFTER groq_api_key"
+    );
 }
 
 function ensure_notif_check_column(PDO $pdo): void
@@ -2303,6 +2315,10 @@ function render_layout(string $title, string $content, array $options = []): voi
                                 Change password
                             </a>
                         <?php endif; ?>
+                        <a href="/profile/ai-keys.php">
+                            <i data-lucide="cpu" style="width:13px;height:13px;"></i>
+                            My AI key
+                        </a>
                         <a href="/logout.php" class="pdd-signout">
                             <i data-lucide="log-out" style="width:13px;height:13px;"></i>
                             Sign out
@@ -2326,6 +2342,7 @@ function render_layout(string $title, string $content, array $options = []): voi
                 <a href="/index.php"<?= $__nav('index.php') ?>>Home</a>
                 <a href="/documents.php"<?= $__nav('documents.php') ?>>Process maps</a>
                 <a href="/systems.php"<?= $__nav('systems.php') ?>>Systems</a>
+                <a href="/ai-settings.php"<?= $__nav('ai-settings.php') ?>>AI settings</a>
                 <?php
                 $__inResources = in_array($__pg, ['help.php','dev.php','security.php']);
                 ?>
@@ -2378,6 +2395,7 @@ function render_layout(string $title, string $content, array $options = []): voi
                 <?php endif; ?>
                 <?php if (function_exists('is_microsoft_user') && !is_microsoft_user()): ?>
                     <a href="/profile/change-password.php" class="mobile-nav-signout">Change password</a>
+                    <a href="/profile/ai-keys.php" class="mobile-nav-signout">My AI key</a>
                 <?php endif; ?>
                 <a href="/logout.php" class="mobile-nav-signout">Sign out</a>
             <?php else: ?>

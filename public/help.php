@@ -112,6 +112,69 @@ ob_start();
     </div>
 </div>
 
+<!-- ── AI diagram generation ──────────────────────────────────────── -->
+<div class="card">
+    <h2>Building with AI</h2>
+    <p>
+        The Edit page includes two AI-powered panels that let you build and refine process maps
+        from plain language rather than entering every step by hand.
+        AI works best when you give it a clear description grounded in what you actually learned
+        from staff — it removes the data entry, not the thinking.
+    </p>
+
+    <div style="display:grid;gap:0;">
+        <?php
+        $aiSteps = [
+            [
+                'Build diagram from description',
+                'Open the <strong>Build diagram from description</strong> panel in the Steps section of the Edit page. You do not need lanes set up first — describe the whole process in plain language and AI will work out the roles and steps itself.',
+                '<ol style="margin:0.5rem 0 0;padding-left:1.25rem;font-size:0.875rem;display:grid;gap:0.35rem;">
+                    <li>Type or paste a description of the process — who does what, in what order, including any decisions or handoffs.</li>
+                    <li>Click <strong>Generate</strong>. AI reads your description and suggests swimlanes, steps (with step type and action type), and the connections between them.</li>
+                    <li>Review the preview — you can see every suggested lane, step, and connection before anything is created.</li>
+                    <li>Click <strong>Create</strong> to build the whole diagram in one go. The page reloads with all lanes, steps, and connections in place.</li>
+                </ol>
+                <p style="margin:0.5rem 0 0;font-size:0.875rem;">The longer and more detailed your description, the better the result. Include role names, system names, and any decision points ("if the repair is specialist…") for accurate output.</p>',
+            ],
+            [
+                'Refine diagram with AI',
+                'Once a diagram has steps, a <strong>Refine diagram with AI</strong> panel appears below the steps table. Use it to add a decision point, insert a new lane, rewire connections, or describe any other change — without rebuilding from scratch.',
+                '<ol style="margin:0.5rem 0 0;padding-left:1.25rem;font-size:0.875rem;display:grid;gap:0.35rem;">
+                    <li>Describe the change you want, for example: <em>"Add a decision point after step 3 — if the repair is specialist, route to a Contractor lane."</em></li>
+                    <li>Click <strong>Suggest changes</strong>. AI reads the current diagram and proposes what to add or remove.</li>
+                    <li>Review the suggestions — new lanes, new steps, connections to add, and connections to remove are all shown before anything changes.</li>
+                    <li>Click <strong>Apply</strong> to make the changes. The page reloads with the updates in place.</li>
+                </ol>
+                <p style="margin:0.5rem 0 0;font-size:0.875rem;">Refinement only adds or removes — it does not overwrite your existing work. If you do not like the suggestion, just do not apply it.</p>',
+            ],
+            [
+                'Configuring AI — Groq, Gemini, or Ollama',
+                'Go to <strong>AI settings</strong> in the navigation to set up which AI model is used. The system tries each source in this order: Groq first, then Gemini, then Ollama.',
+                '<ul style="margin:0.5rem 0 0;padding-left:1.25rem;font-size:0.875rem;display:grid;gap:0.35rem;">
+                    <li><strong>Groq</strong> (recommended) — free API key, no credit card required. Sign up at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>. Uses Llama 3.3 70B, responds in 2–3 seconds.</li>
+                    <li><strong>Gemini</strong> — free API key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com</a>. Uses Gemini 2.0 Flash.</li>
+                    <li><strong>Ollama</strong> — runs on your own machine, no internet required. Useful for local development only. When the site is hosted on a server (e.g. Hostinger), Ollama is not available to other users — a Groq or Gemini key is needed instead. Install from <a href="https://ollama.com" target="_blank" rel="noopener">ollama.com</a> and pull a model (qwen3:8b works well).</li>
+                </ul>
+                <p style="margin:0.5rem 0 0;font-size:0.875rem;">The active source is shown next to the Generate button on the Edit page.</p>',
+            ],
+        ];
+        foreach ($aiSteps as $i => [$title, $body, $extra]):
+        ?>
+        <div style="display:grid;grid-template-columns:1fr;gap:0;
+                    border-bottom:<?= $i < count($aiSteps)-1 ? '1px solid var(--border)' : 'none' ?>;
+                    padding:1rem 0;">
+            <strong style="font-size:0.9rem;display:flex;align-items:center;gap:0.4rem;">
+                <i data-lucide="<?= $i === 0 ? 'sparkles' : ($i === 1 ? 'wand-2' : 'cpu') ?>"
+                   style="width:0.95rem;height:0.95rem;color:var(--accent);flex-shrink:0;"></i>
+                <?= $title ?>
+            </strong>
+            <p style="margin:0.3rem 0 0;font-size:0.875rem;"><?= $body ?></p>
+            <?= $extra ?>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
 <!-- ── JSON export and import ─────────────────────────────────────── -->
 <div class="card">
     <h2>Exporting and importing JSON</h2>
