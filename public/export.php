@@ -64,9 +64,42 @@ $export = [
 
 $filename = preg_replace('/[^a-z0-9-]/', '-', strtolower($document['slug'] ?: $document['title']));
 $filename = trim(preg_replace('/-+/', '-', $filename), '-') . '.json';
+$json     = json_encode($export, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-header('Content-Type: application/json; charset=utf-8');
-header('Content-Disposition: attachment; filename="' . $filename . '"');
-header('Cache-Control: no-store');
+// ?view=1 renders inline; otherwise download
+if (!empty($_GET['view'])) {
+    ob_start();
+    ?>
+    <header>
+        <div>
+            <h1 style="margin:0 0 0.15rem;"><?= h($document['title']) ?></h1>
+            <p style="margin:0;color:var(--muted);font-size:0.875rem;">JSON export — <?= h($filename) ?></p>
+        </div>
+        <div class="actions">
+            <a class="btn btn-secondary btn-sm" href="/export.php?slug=<?= rawurlencode($document['slug']) ?>">Download</a>
+            <a class="btn btn-secondary btn-sm" href="/view.php?slug=<?= rawurlencode($document['slug']) ?>">View diagram</a>
+        </div>
+    </header>
 
-echo json_encode($export, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    <div class="card" style="padding:0;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    padding:0.6rem 1rem;border-bottom:1px solid var(--border);background:var(--bg);">
+            <span style="font-size:0.78rem;color:var(--muted);">
+                <?= count($lanes) ?> lanes · <?= count($steps) ?> steps · <?= count($connections) ?> connections
+            </span>
+            <button onclick="navigator.clipboard.writeText(document.getElementById('json-src').textContent)
+                             .then(() => { this.textContent = 'Copied!'; setTimeout(() => this.textContent = 'Copy', 1500); })"
+                    class="btn btn-secondary btn-sm">Copy</button>
+        </div>
+        <pre id="json-src" style="margin:0;padding:1.25rem;font-family:'IBM Plex Mono',monospace;
+             font-size:0.78rem;line-height:1.6;overflow-x:auto;white-space:pre;
+             background:white;"><?= h($json) ?></pre>
+    </div>
+    <?php
+    render_layout('JSON — ' . h($document['title']), ob_get_clean() ?: '');
+} else {
+    header('Content-Type: application/json; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Cache-Control: no-store');
+    echo $json;
+}

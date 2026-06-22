@@ -308,7 +308,11 @@ ob_start();
         <span class="badge" style="margin-top:0.05rem;"><?= h($fb['type']) ?></span>
         <div>
             <div><?= h($fb['message']) ?></div>
-            <div style="font-size:0.75rem;color:var(--muted);margin-top:0.15rem;"><?= h($fb['page']) ?></div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:0.15rem;">
+                <?php if ($fb['page']): ?>
+                    <a href="<?= h($fb['page']) ?>" style="color:var(--muted);"><?= h(page_label($fb['page'])) ?></a>
+                <?php endif; ?>
+            </div>
         </div>
         <div style="text-align:right;font-size:0.75rem;color:var(--muted);white-space:nowrap;">
             <?= h($fb['submitted_by']) ?><br>

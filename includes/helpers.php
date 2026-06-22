@@ -739,6 +739,43 @@ function resolve_document_request(PDO $pdo): ?array
     return null;
 }
 
+// Convert a raw page URL (e.g. /view.php?slug=my-map) to a human-readable label.
+function page_label(string $url): string
+{
+    $path  = parse_url($url, PHP_URL_PATH) ?: '/';
+    $qs    = [];
+    parse_str(parse_url($url, PHP_URL_QUERY) ?: '', $qs);
+
+    $map = [
+        '/'                  => 'Home',
+        '/index.php'         => 'Home',
+        '/documents.php'     => 'Process maps',
+        '/new.php'           => 'New process map',
+        '/import.php'        => 'Import JSON',
+        '/help.php'          => 'Guidance',
+        '/dev.php'           => 'Roadmap',
+        '/admin.php'         => 'Admin',
+        '/security.php'      => 'Security',
+        '/systems.php'       => 'Systems',
+        '/setup.php'         => 'Setup',
+        '/login.php'         => 'Sign in',
+        '/logout.php'        => 'Sign out',
+        '/feedback-view.php' => 'Feedback',
+    ];
+
+    if (isset($map[$path])) return $map[$path];
+
+    // Process map view/edit — convert slug to title
+    if (($path === '/view.php' || $path === '/edit.php') && isset($qs['slug'])) {
+        $slug  = preg_replace('/^sample-/', '', $qs['slug']);
+        $title = ucwords(str_replace('-', ' ', $slug));
+        return ($path === '/edit.php' ? 'Edit: ' : '') . $title;
+    }
+
+    // Fallback: tidy up the filename
+    return ucwords(str_replace(['-', '_', '.php'], [' ', ' ', ''], basename($path)));
+}
+
 function redirect(string $path): never
 {
     header('Location: ' . $path);

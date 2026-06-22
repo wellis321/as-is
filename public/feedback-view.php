@@ -53,8 +53,15 @@ ob_start();
                 <td style="padding:0.6rem 1rem;">
                     <span class="badge"><?= h($r['type']) ?></span>
                 </td>
-                <td style="padding:0.6rem 1rem;font-size:0.8rem;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                    <?= h($r['page']) ?>
+                <td style="padding:0.6rem 1rem;font-size:0.8rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                    <?php if ($r['page']): ?>
+                        <a href="<?= h($r['page']) ?>" style="color:var(--muted);text-decoration:none;"
+                           onmouseover="this.style.textDecoration='underline'"
+                           onmouseout="this.style.textDecoration='none'"
+                           title="<?= h($r['page']) ?>">
+                            <?= h(page_label($r['page'])) ?>
+                        </a>
+                    <?php endif; ?>
                 </td>
                 <td style="padding:0.6rem 1rem;color:var(--muted);"><?= h($r['submitted_by']) ?></td>
                 <td style="padding:0.6rem 1rem;max-width:340px;"><?= h($r['message']) ?></td>
