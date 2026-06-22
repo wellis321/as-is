@@ -376,6 +376,155 @@ $laneColours = ['#ffffff', '#e8eaed'];
         <?php endif; ?>
     </div>
 
+    <!-- Document → Description ─────────────────────────────────────── -->
+    <details style="margin-bottom:1rem;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <summary style="display:flex;align-items:center;gap:0.5rem;padding:0.65rem 1rem;
+                        cursor:pointer;user-select:none;font-size:0.875rem;font-weight:600;
+                        background:var(--bg-subtle,var(--bg));list-style:none;">
+            <i data-lucide="file-text" style="width:1rem;height:1rem;color:var(--accent);flex-shrink:0;"></i>
+            Extract process from a document
+            <span style="font-weight:400;color:var(--muted);margin-left:0.25rem;">&mdash; upload a PDF or paste text, AI writes the description</span>
+        </summary>
+        <div style="padding:1rem;border-top:1px solid var(--border);">
+            <p style="margin:0 0 0.75rem;font-size:0.8125rem;color:var(--muted);">
+                Upload a process document or paste its text. AI will read it and write a plain-English
+                process description, which you can review and edit before generating the diagram.
+            </p>
+
+            <div style="margin-bottom:0.75rem;">
+                <label style="font-size:0.8125rem;font-weight:600;display:block;margin-bottom:0.3rem;">
+                    Upload documents
+                    <span style="font-weight:400;color:var(--muted);">— PDF or text files, select multiple</span>
+                </label>
+                <input type="file" id="doc-file" accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.md" multiple
+                       style="font-size:0.8rem;width:100%;box-sizing:border-box;">
+                <div id="doc-file-list" style="margin-top:0.4rem;display:flex;flex-wrap:wrap;gap:0.3rem;"></div>
+                <p style="font-size:0.775rem;color:var(--muted);margin:0.25rem 0 0;">
+                    PDF, Word (.docx), Excel (.xlsx, .csv), and plain text. Mix types freely.
+                </p>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;color:var(--muted);font-size:0.8rem;">
+                <div style="flex:1;height:1px;background:var(--border);"></div>
+                and / or
+                <div style="flex:1;height:1px;background:var(--border);"></div>
+            </div>
+
+            <div style="margin-bottom:0.75rem;">
+                <label for="doc-paste" style="font-size:0.8125rem;font-weight:600;display:block;margin-bottom:0.3rem;">Paste document text</label>
+                <textarea id="doc-paste" rows="4"
+                          style="width:100%;box-sizing:border-box;resize:vertical;font-size:0.8125rem;"
+                          placeholder="Paste text from one or more documents here — or combine with uploaded files above…"></textarea>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+                <button type="button" id="doc-extract-btn" class="btn btn-secondary btn-sm">Extract description</button>
+                <span id="doc-status" style="font-size:0.8rem;color:var(--muted);"></span>
+            </div>
+
+            <div id="doc-result" style="margin-top:0.75rem;display:none;">
+                <label for="doc-preview" style="font-size:0.8125rem;font-weight:600;display:block;margin-bottom:0.3rem;">
+                    Extracted description — review and edit before generating
+                </label>
+                <textarea id="doc-preview" rows="5"
+                          style="width:100%;box-sizing:border-box;resize:vertical;font-size:0.875rem;
+                                 border:2px solid var(--accent);border-radius:6px;"></textarea>
+                <div style="margin-top:0.5rem;">
+                    <button type="button" id="doc-use-btn" class="btn btn-sm"
+                            style="background:var(--accent);color:#fff;border-color:var(--accent);">
+                        Use this description
+                    </button>
+                    <span style="font-size:0.8rem;color:var(--muted);margin-left:0.5rem;">
+                        Copies to the Generate panel below — then click Generate
+                    </span>
+                </div>
+            </div>
+        </div>
+    </details>
+    <script>
+    (function () {
+        const extractBtn = document.getElementById('doc-extract-btn');
+        const docStatus  = document.getElementById('doc-status');
+        const docResult  = document.getElementById('doc-result');
+        const docPreview = document.getElementById('doc-preview');
+        const useBtn     = document.getElementById('doc-use-btn');
+        const csrf       = <?= json_encode(csrf_token()) ?>;
+        const slug       = <?= json_encode($document['slug']) ?>;
+
+        // Show file chips when selection changes
+        document.getElementById('doc-file').addEventListener('change', function () {
+            const list = document.getElementById('doc-file-list');
+            list.innerHTML = '';
+            Array.from(this.files).forEach(f => {
+                const chip = document.createElement('span');
+                chip.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:6px;' +
+                                     'padding:0.2rem 0.5rem;font-size:0.775rem;display:flex;align-items:center;gap:0.25rem;';
+                const ext  = f.name.split('.').pop().toLowerCase();
+                const icon = ext === 'pdf' ? '📄' : (ext === 'docx' ? '📝' : (ext === 'xlsx' || ext === 'xls' || ext === 'csv' ? '📊' : '📃'));
+                chip.textContent = icon + ' ' + f.name;
+                list.appendChild(chip);
+            });
+        });
+
+        extractBtn.addEventListener('click', async () => {
+            const files     = document.getElementById('doc-file').files;
+            const pasteText = document.getElementById('doc-paste').value.trim();
+
+            if (files.length === 0 && !pasteText) {
+                docStatus.textContent = 'Upload at least one file or paste some text first.';
+                return;
+            }
+
+            const sourceCount = files.length + (pasteText ? 1 : 0);
+            extractBtn.disabled   = true;
+            docResult.style.display = 'none';
+            docStatus.textContent = sourceCount > 1
+                ? 'Reading ' + sourceCount + ' sources and synthesising…'
+                : 'Reading document…';
+
+            try {
+                const body = new FormData();
+                body.append('csrf_token', csrf);
+                body.append('slug',       slug);
+                Array.from(files).forEach(f => body.append('documents[]', f));
+                if (pasteText) body.append('paste_text', pasteText);
+
+                const resp = await fetch('/ai-extract.php', { method: 'POST', body });
+                const data = await resp.json();
+
+                if (!resp.ok || data.error) {
+                    docStatus.textContent = data.error || 'Something went wrong.';
+                    return;
+                }
+
+                docPreview.value        = data.description;
+                docResult.style.display = '';
+
+                let msg = 'Extracted from ' + (data.sources || []).join(', ') + ' (' + data.model + ')';
+                if (data.warning) msg += ' — ⚠ ' + data.warning;
+                docStatus.textContent = msg;
+
+            } catch (err) {
+                docStatus.textContent = 'Could not reach the server.';
+            } finally {
+                extractBtn.disabled = false;
+            }
+        });
+
+        useBtn.addEventListener('click', () => {
+            const description = document.getElementById('ai-description');
+            if (description) {
+                description.value = docPreview.value;
+                // Scroll to and open the generate panel
+                const panel = description.closest('details');
+                if (panel) panel.open = true;
+                description.focus();
+                description.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    }());
+    </script>
+
     <!-- AI Assist ─────────────────────────────────────────────── -->
     <details class="ai-assist-panel" style="margin-bottom:1rem;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
         <summary style="display:flex;align-items:center;gap:0.5rem;padding:0.65rem 1rem;
