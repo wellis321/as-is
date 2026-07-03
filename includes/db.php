@@ -2,6 +2,34 @@
 
 declare(strict_types=1);
 
+// Show a clean "database unavailable" page and stop — never expose stack traces.
+function db_unavailable(string $detail = ''): never
+{
+    // Log the real error server-side without showing it to the user
+    error_log('Database connection failed: ' . $detail);
+
+    if (!headers_sent()) {
+        http_response_code(503);
+        header('Content-Type: text/html; charset=utf-8');
+    }
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Service unavailable</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 480px; margin: 10vh auto;
+               padding: 2rem; color: #1f2937; background: #f9fafb; }
+        h1   { font-size: 1.5rem; margin: 0 0 .75rem; color: #111827; }
+        p    { margin: 0 0 .5rem; color: #6b7280; font-size: .9375rem; }
+        a    { color: #006A51; }
+    </style>
+    </head><body>
+    <h1>Service temporarily unavailable</h1>
+    <p>The database is not reachable right now. Please try again in a moment.</p>
+    <p>If this keeps happening, contact your system administrator.</p>
+    </body></html>';
+    exit;
+}
+
 function db_config(): array
 {
     static $config = null;
@@ -30,10 +58,14 @@ function db_server(): PDO
         $config['charset']
     );
 
-    $pdo = new PDO($dsn, $config['username'], $config['password'], [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
+    try {
+        $pdo = new PDO($dsn, $config['username'], $config['password'], [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
+    } catch (PDOException $e) {
+        db_unavailable($e->getMessage());
+    }
 
     return $pdo;
 }
@@ -56,10 +88,14 @@ function db(): PDO
         $config['charset']
     );
 
-    $pdo = new PDO($dsn, $config['username'], $config['password'], [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
+    try {
+        $pdo = new PDO($dsn, $config['username'], $config['password'], [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
+    } catch (PDOException $e) {
+        db_unavailable($e->getMessage());
+    }
 
     return $pdo;
 }

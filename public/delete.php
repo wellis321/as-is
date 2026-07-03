@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
-require_min_role('admin');
+require_min_role('editor');
 
 $pdo = db();
 $document = resolve_document_request($pdo);
@@ -13,6 +13,10 @@ $error = null;
 
 if ($document === null) {
     redirect('/documents.php');
+}
+
+if (!can_delete_document($document)) {
+    redirect('/view.php?slug=' . rawurlencode($document['slug']));
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

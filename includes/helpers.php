@@ -230,6 +230,49 @@ function ensure_schema(PDO $pdo): void
     ensure_subprocess_types($pdo);
     ensure_notif_check_column($pdo);
     ensure_user_ai_key_columns($pdo);
+    ensure_document_ownership_columns($pdo);
+}
+
+function ensure_document_ownership_columns(PDO $pdo): void
+{
+    $col = $pdo->query("SHOW COLUMNS FROM as_is_documents LIKE 'created_by'")->fetch();
+    if ($col) return;
+    $pdo->exec("ALTER TABLE as_is_documents
+        ADD COLUMN created_by INT UNSIGNED NULL DEFAULT NULL,
+        ADD COLUMN allow_editors TINYINT(1) NOT NULL DEFAULT 1");
+}
+
+// ── Document permission helpers ───────────────────────────────────────────────
+
+function document_owner_id(array $doc): int
+{
+    return (int) ($doc['created_by'] ?? 0);
+}
+
+function can_edit_document(array $doc): bool
+{
+    if (!function_exists('user_has_min_role')) return false;
+    if (!user_has_min_role('editor'))  return false;   // must be at least editor
+    if (user_has_min_role('admin'))    return true;    // admins can always edit
+
+    $userId    = (int) ($_SESSION['user_id'] ?? 0);
+    $createdBy = document_owner_id($doc);
+
+    if ($createdBy === 0)              return true;    // legacy doc — no owner set
+    if ($createdBy === $userId)        return true;    // creator
+    return (bool) ($doc['allow_editors'] ?? 1);        // sharing setting
+}
+
+function can_delete_document(array $doc): bool
+{
+    if (!function_exists('user_has_min_role')) return false;
+    if (user_has_min_role('admin'))    return true;    // admins always
+
+    $userId    = (int) ($_SESSION['user_id'] ?? 0);
+    $createdBy = document_owner_id($doc);
+
+    // Only creator (or admin) can delete — ignores allow_editors
+    return $createdBy === 0 || $createdBy === $userId;
 }
 
 function ensure_user_ai_key_columns(PDO $pdo): void
@@ -372,10 +415,11 @@ function create_document(
     string $capturedDate = '',
     string $version = ''
 ): array {
-    $slug = unique_slug($pdo, $title);
+    $slug      = unique_slug($pdo, $title);
+    $createdBy = (int) ($_SESSION['user_id'] ?? 0) ?: null;
     $stmt = $pdo->prepare(
-        'INSERT INTO as_is_documents (title, slug, description, status, owner, department, captured_date, version)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO as_is_documents (title, slug, description, status, owner, department, captured_date, version, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         $title,
@@ -386,6 +430,7 @@ function create_document(
         $department !== '' ? $department : null,
         $capturedDate !== '' ? $capturedDate : null,
         $version !== '' ? $version : null,
+        $createdBy,
     ]);
 
     $document = fetch_document($pdo, (int) $pdo->lastInsertId());
@@ -766,6 +811,7 @@ function page_label(string $url): string
         '/import.php'        => 'Import JSON',
         '/help.php'          => 'Guidance',
         '/dev.php'           => 'Roadmap',
+        '/groups-docs.php'   => 'Boards & Groups',
         '/admin.php'         => 'Admin',
         '/security.php'      => 'Security',
         '/systems.php'       => 'Systems',
@@ -2344,7 +2390,7 @@ function render_layout(string $title, string $content, array $options = []): voi
                 <a href="/systems.php"<?= $__nav('systems.php') ?>>Systems</a>
                 <a href="/ai-settings.php"<?= $__nav('ai-settings.php') ?>>AI settings</a>
                 <?php
-                $__inResources = in_array($__pg, ['help.php','dev.php','security.php']);
+                $__inResources = in_array($__pg, ['help.php','dev.php','security.php','groups-docs.php']);
                 ?>
                 <div class="nav-group">
                     <button class="nav-group-btn<?= $__inResources ? ' open' : '' ?>"
@@ -2366,6 +2412,12 @@ function render_layout(string $title, string $content, array $options = []): voi
                         <a href="/security.php"<?= $__nav('security.php') ?>>
                             <i data-lucide="shield-check" style="width:13px;height:13px;"></i>
                             Security
+                        </a>
+                        <?php endif; ?>
+                        <?php if (function_exists('user_has_min_role') && user_has_min_role('admin')): ?>
+                        <a href="/groups-docs.php"<?= $__nav('groups-docs.php') ?>>
+                            <i data-lucide="users" style="width:13px;height:13px;"></i>
+                            Boards &amp; Groups
                         </a>
                         <?php endif; ?>
                     </div>
@@ -2477,6 +2529,7 @@ function render_layout(string $title, string $content, array $options = []): voi
             <a href="<?= h(SOR_SITE_URL) ?>/" style="color:rgba(255,255,255,.75);text-decoration:none;padding:.15rem .45rem;border:1px solid rgba(255,255,255,.25);border-radius:3px;">SOR Management System</a>
             <a href="<?= h(ERC_SITE_URL) ?>/" style="color:rgba(255,255,255,.75);text-decoration:none;padding:.15rem .45rem;border:1px solid rgba(255,255,255,.25);border-radius:3px;">ERC Portal</a>
             <a href="<?= h(APP_URL) ?>/" style="color:rgba(255,255,255,.75);text-decoration:none;padding:.15rem .45rem;border:1px solid rgba(255,255,255,.25);border-radius:3px;">AS-IS Process Mapping</a>
+            <a href="<?= h(METRICS_SITE_URL) ?>/" style="color:rgba(255,255,255,.75);text-decoration:none;padding:.15rem .45rem;border:1px solid rgba(255,255,255,.25);border-radius:3px;">Housing Metrics</a>
         </div>
     </footer>
 

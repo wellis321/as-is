@@ -111,6 +111,9 @@ ob_start();
                                 <?php if ($isSample): ?>
                                     <span class="badge-example" style="flex-shrink:0;">Example</span>
                                 <?php endif; ?>
+                                <?php if (($doc['created_by'] ?? 0) && !($doc['allow_editors'] ?? 1) && !can_edit_document($doc)): ?>
+                                    <i data-lucide="lock" style="width:0.75rem;height:0.75rem;color:var(--muted);flex-shrink:0;" title="Only the owner can edit this document"></i>
+                                <?php endif; ?>
                             </div>
                             <?php if (!empty($doc['description'])): ?>
                                 <div class="td-clip"
@@ -128,8 +131,10 @@ ob_start();
                             <div class="row-actions">
                                 <a class="btn btn-sm"
                                    href="/view.php?slug=<?= rawurlencode($doc['slug']) ?>">View</a>
+                                <?php if (can_edit_document($doc)): ?>
                                 <a class="btn btn-secondary btn-sm"
                                    href="/edit.php?slug=<?= rawurlencode($doc['slug']) ?>">Edit</a>
+                                <?php endif; ?>
                             </div>
                         </td>
                     </tr>

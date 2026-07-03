@@ -1,0 +1,240 @@
+
+<style>
+  .screen { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; margin-bottom: 2rem; }
+  .screen-label { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .topbar { background: var(--color-background-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+  .topbar-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .topbar-search { flex: 1; background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 5px 10px; font-size: 13px; color: var(--color-text-secondary); display: flex; align-items: center; gap: 6px; }
+  .btn-primary { background: var(--color-text-primary); color: var(--color-background-primary); border: none; border-radius: var(--border-radius-md); padding: 6px 14px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .sidebar { width: 160px; flex-shrink: 0; border-right: 0.5px solid var(--color-border-tertiary); padding: 12px 0; }
+  .sidebar-item { padding: 7px 16px; font-size: 13px; color: var(--color-text-secondary); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  .sidebar-item.active { color: var(--color-text-primary); background: var(--color-background-secondary); font-weight: 500; border-right: 2px solid var(--color-text-primary); }
+  .sidebar-section { padding: 10px 16px 4px; font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; }
+  .content { flex: 1; padding: 16px; overflow: auto; }
+  .filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-chip { padding: 4px 12px; border-radius: 20px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); color: var(--color-text-secondary); cursor: pointer; }
+  .filter-chip.active { border-color: var(--color-border-primary); color: var(--color-text-primary); background: var(--color-background-secondary); }
+  .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+  .doc-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 12px; cursor: pointer; background: var(--color-background-primary); }
+  .doc-card:hover { border-color: var(--color-border-secondary); background: var(--color-background-secondary); }
+  .doc-type { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+  .doc-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 8px; line-height: 1.3; }
+  .doc-meta { font-size: 11px; color: var(--color-text-tertiary); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge-approved { background: var(--color-background-success); color: var(--color-text-success); }
+  .badge-draft { background: var(--color-background-secondary); color: var(--color-text-secondary); }
+  .badge-review { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .divider { height: 0.5px; background: var(--color-border-tertiary); margin: 16px 0; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-label { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); }
+  .form-input { border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 7px 10px; font-size: 13px; color: var(--color-text-primary); background: var(--color-background-primary); }
+  .form-input:focus { outline: none; border-color: var(--color-border-primary); }
+  .type-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .type-card { border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 12px; cursor: pointer; text-align: center; }
+  .type-card.selected { border-color: var(--color-border-primary); background: var(--color-background-secondary); }
+  .type-icon { font-size: 22px; margin-bottom: 6px; color: var(--color-text-secondary); }
+  .type-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+  .type-desc { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  .step-nav { display: flex; align-items: center; gap: 0; margin-bottom: 20px; }
+  .step { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .step-dot { width: 20px; height: 20px; border-radius: 50%; border: 0.5px solid var(--color-border-secondary); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--color-text-secondary); }
+  .step-dot.active { background: var(--color-text-primary); color: var(--color-background-primary); border-color: var(--color-text-primary); }
+  .step-dot.done { background: var(--color-background-success); color: var(--color-text-success); border-color: var(--color-text-success); }
+  .step-label { font-size: 11px; color: var(--color-text-secondary); }
+  .step-label.active { color: var(--color-text-primary); font-weight: 500; }
+  .step-line { width: 24px; height: 0.5px; background: var(--color-border-tertiary); margin: 0 4px; }
+  .builder-area { border: 0.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 20px; min-height: 120px; display: flex; flex-direction: column; gap: 8px; background: var(--color-background-secondary); }
+  .builder-step { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 8px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .step-num { width: 20px; height: 20px; border-radius: 50%; background: var(--color-background-info); color: var(--color-text-info); font-size: 11px; font-weight: 500; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .add-step { border: 0.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 8px; text-align: center; font-size: 12px; color: var(--color-text-tertiary); cursor: pointer; }
+  .section-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 10px; }
+  .btn-secondary { border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 6px 14px; font-size: 13px; background: transparent; color: var(--color-text-primary); cursor: pointer; }
+  .action-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+</style>
+
+<h2 class="sr-only">As-Is Digital Management System — UI Concept showing library and document creation screens</h2>
+
+<!-- SCREEN 1: Library -->
+<p class="screen-label">Screen 1 — As-is library (home)</p>
+<div class="screen">
+  <div class="topbar">
+    <span class="topbar-title">As-is hub</span>
+    <div class="topbar-search">
+      <i class="ti ti-search" aria-hidden="true" style="font-size:14px"></i>
+      <span>Search documents, departments, systems…</span>
+    </div>
+    <button class="btn-primary" onclick="sendPrompt('What should happen when staff click New as-is document? ↗')">+ New document</button>
+  </div>
+  <div style="display:flex; min-height:280px;">
+    <div class="sidebar">
+      <div class="sidebar-section">Library</div>
+      <div class="sidebar-item active"><i class="ti ti-layout-grid" aria-hidden="true"></i> All documents</div>
+      <div class="sidebar-item"><i class="ti ti-clock" aria-hidden="true"></i> Recent</div>
+      <div class="sidebar-item"><i class="ti ti-star" aria-hidden="true"></i> Favourites</div>
+      <div class="sidebar-item"><i class="ti ti-user" aria-hidden="true"></i> My documents</div>
+      <div class="sidebar-section">Type</div>
+      <div class="sidebar-item"><i class="ti ti-git-branch" aria-hidden="true"></i> Process maps</div>
+      <div class="sidebar-item"><i class="ti ti-topology-star" aria-hidden="true"></i> System maps</div>
+      <div class="sidebar-section">Status</div>
+      <div class="sidebar-item"><i class="ti ti-circle-check" aria-hidden="true"></i> Approved</div>
+      <div class="sidebar-item"><i class="ti ti-edit" aria-hidden="true"></i> In review</div>
+      <div class="sidebar-item"><i class="ti ti-file" aria-hidden="true"></i> Drafts</div>
+    </div>
+    <div class="content">
+      <div class="filter-row">
+        <span class="filter-chip active">All</span>
+        <span class="filter-chip">Finance</span>
+        <span class="filter-chip">HR</span>
+        <span class="filter-chip">IT</span>
+        <span class="filter-chip">Operations</span>
+        <span class="filter-chip">Customer service</span>
+      </div>
+      <div class="doc-grid">
+        <div class="doc-card">
+          <div class="doc-type"><i class="ti ti-git-branch" aria-hidden="true" style="font-size:12px"></i> Process map</div>
+          <div class="doc-title">Staff onboarding process</div>
+          <div class="doc-meta">HR · v2.1</div>
+          <div style="margin-top:6px"><span class="badge badge-approved">Approved</span></div>
+        </div>
+        <div class="doc-card">
+          <div class="doc-type"><i class="ti ti-topology-star" aria-hidden="true" style="font-size:12px"></i> System map</div>
+          <div class="doc-title">Payroll system integrations</div>
+          <div class="doc-meta">Finance · v1.0</div>
+          <div style="margin-top:6px"><span class="badge badge-review">In review</span></div>
+        </div>
+        <div class="doc-card">
+          <div class="doc-type"><i class="ti ti-git-branch" aria-hidden="true" style="font-size:12px"></i> Process map</div>
+          <div class="doc-title">Customer complaint handling</div>
+          <div class="doc-meta">Ops · v3.0</div>
+          <div style="margin-top:6px"><span class="badge badge-approved">Approved</span></div>
+        </div>
+        <div class="doc-card">
+          <div class="doc-type"><i class="ti ti-topology-star" aria-hidden="true" style="font-size:12px"></i> System map</div>
+          <div class="doc-title">CRM architecture</div>
+          <div class="doc-meta">IT · v1.2</div>
+          <div style="margin-top:6px"><span class="badge badge-draft">Draft</span></div>
+        </div>
+        <div class="doc-card">
+          <div class="doc-type"><i class="ti ti-git-branch" aria-hidden="true" style="font-size:12px"></i> Process map</div>
+          <div class="doc-title">Purchase order approval</div>
+          <div class="doc-meta">Finance · v4.1</div>
+          <div style="margin-top:6px"><span class="badge badge-approved">Approved</span></div>
+        </div>
+        <div class="doc-card">
+          <div class="doc-type"><i class="ti ti-topology-star" aria-hidden="true" style="font-size:12px"></i> System map</div>
+          <div class="doc-title">Data warehouse pipeline</div>
+          <div class="doc-meta">IT · v2.0</div>
+          <div style="margin-top:6px"><span class="badge badge-review">In review</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: New document — type selection + metadata -->
+<p class="screen-label">Screen 2 — New document (step 1 of 3: type + metadata)</p>
+<div class="screen">
+  <div class="topbar">
+    <i class="ti ti-arrow-left" aria-hidden="true" style="font-size:16px; color:var(--color-text-secondary); cursor:pointer"></i>
+    <span class="topbar-title">New as-is document</span>
+  </div>
+  <div class="content">
+    <div class="step-nav">
+      <div class="step"><div class="step-dot active">1</div><span class="step-label active">Type & details</span></div>
+      <div class="step-line"></div>
+      <div class="step"><div class="step-dot">2</div><span class="step-label">Build diagram</span></div>
+      <div class="step-line"></div>
+      <div class="step"><div class="step-dot">3</div><span class="step-label">Review & submit</span></div>
+    </div>
+    <div class="section-title">Choose document type</div>
+    <div class="type-selector">
+      <div class="type-card selected" onclick="sendPrompt('What information is needed to create a process map as-is? ↗')">
+        <div class="type-icon"><i class="ti ti-git-branch" aria-hidden="true"></i></div>
+        <div class="type-name">Process map</div>
+        <div class="type-desc">Steps, decisions, roles, swimlanes</div>
+      </div>
+      <div class="type-card" onclick="sendPrompt('What information is needed to create a system architecture as-is? ↗')">
+        <div class="type-icon"><i class="ti ti-topology-star" aria-hidden="true"></i></div>
+        <div class="type-name">System map</div>
+        <div class="type-desc">Components, integrations, data flows</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="section-title">Document details</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Title</label>
+        <input class="form-input" type="text" placeholder="e.g. Staff onboarding process">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Department</label>
+        <select class="form-input"><option>Select department…</option><option>HR</option><option>Finance</option><option>IT</option><option>Operations</option></select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">Description / purpose</label>
+      <textarea class="form-input" rows="2" placeholder="Briefly describe what this as-is documents and why…" style="resize:vertical"></textarea>
+    </div>
+    <div class="action-row">
+      <button class="btn-secondary">Save draft</button>
+      <button class="btn-primary">Next: Build diagram →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3: Build diagram -->
+<p class="screen-label">Screen 3 — Build diagram (step 2 of 3)</p>
+<div class="screen">
+  <div class="topbar">
+    <i class="ti ti-arrow-left" aria-hidden="true" style="font-size:16px; color:var(--color-text-secondary); cursor:pointer"></i>
+    <span class="topbar-title">Staff onboarding process</span>
+    <span style="font-size:12px; color:var(--color-text-secondary); margin-left:4px">· Draft</span>
+    <div style="flex:1"></div>
+    <button class="btn-secondary" onclick="sendPrompt('Should the as-is builder have a visual drag-and-drop mode or a structured form input mode? ↗')">Switch to visual mode</button>
+  </div>
+  <div class="content">
+    <div class="step-nav">
+      <div class="step"><div class="step-dot done"><i class="ti ti-check" aria-hidden="true" style="font-size:10px"></i></div><span class="step-label">Type & details</span></div>
+      <div class="step-line"></div>
+      <div class="step"><div class="step-dot active">2</div><span class="step-label active">Build diagram</span></div>
+      <div class="step-line"></div>
+      <div class="step"><div class="step-dot">3</div><span class="step-label">Review & submit</span></div>
+    </div>
+    <div class="section-title">Process steps</div>
+    <div class="builder-area">
+      <div class="builder-step">
+        <div class="step-num">S</div>
+        <span style="font-size:12px; color:var(--color-text-secondary)">Start</span>
+        <span style="margin-left:auto; font-size:11px; color:var(--color-text-tertiary)">Trigger: Offer accepted</span>
+      </div>
+      <div style="text-align:center; color:var(--color-text-tertiary); font-size:16px; line-height:1">↓</div>
+      <div class="builder-step">
+        <div class="step-num">1</div>
+        <div style="flex:1">
+          <div style="font-size:13px">HR sends welcome pack</div>
+          <div style="font-size:11px; color:var(--color-text-secondary)">Role: HR Admin · System: DocuSign</div>
+        </div>
+        <i class="ti ti-edit" aria-hidden="true" style="font-size:14px; color:var(--color-text-tertiary); cursor:pointer"></i>
+      </div>
+      <div style="text-align:center; color:var(--color-text-tertiary); font-size:16px; line-height:1">↓</div>
+      <div class="builder-step">
+        <div class="step-num">2</div>
+        <div style="flex:1">
+          <div style="font-size:13px">IT sets up accounts</div>
+          <div style="font-size:11px; color:var(--color-text-secondary)">Role: IT Support · System: Active Directory, M365</div>
+        </div>
+        <i class="ti ti-edit" aria-hidden="true" style="font-size:14px; color:var(--color-text-tertiary); cursor:pointer"></i>
+      </div>
+      <div style="text-align:center; color:var(--color-text-tertiary); font-size:16px; line-height:1">↓</div>
+      <div class="add-step" onclick="sendPrompt('What steps typically come after IT setup in a staff onboarding process? ↗')">
+        <i class="ti ti-plus" aria-hidden="true"></i> Add step
+      </div>
+    </div>
+    <div class="action-row" style="margin-top:12px">
+      <button class="btn-secondary">← Back</button>
+      <button class="btn-secondary">Save draft</button>
+      <button class="btn-primary">Next: Review & submit →</button>
+    </div>
+  </div>
+</div>

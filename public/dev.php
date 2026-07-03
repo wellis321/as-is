@@ -79,6 +79,10 @@ ob_start();
     <div style="display:grid;gap:0;">
         <?php
         $planned = [
+            ['high', 'Add a step directly in the diagram',
+             'While viewing a diagram, click in a lane to open an inline form and add a new step without leaving the page. The diagram re-renders immediately to show the new step. Useful when reviewing a process and spotting a missing action.'],
+            ['high', 'Drag steps in the diagram to reorder',
+             'Drag any step node to a new position within its lane in the live diagram. Drops update the step_number and trigger a layout recalculation. Complements the drag-and-drop reordering already available on the Edit page.'],
             ['high', 'Subprocess — click-through to linked document',
              'When a step is marked as Subprocess, clicking it in the diagram navigates to the linked process map (identified by slug). This allows complex processes to be broken into navigable layers without losing the overview.'],
             ['high', 'Publish / unpublish from the process maps list',

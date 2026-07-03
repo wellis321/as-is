@@ -28,16 +28,22 @@ if ($document === null) {
 
 $asIsId = (int) $document['id'];
 
+// Permission check — redirect if the current user can't edit this document
+if (!can_edit_document($document)) {
+    redirect('/view.php?slug=' . rawurlencode($document['slug']));
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_verify()) { redirect('/documents.php'); }
-    $title       = trim((string) ($_POST['title']       ?? ''));
-    $slug        = trim((string) ($_POST['slug']        ?? ''));
-    $description = trim((string) ($_POST['description'] ?? ''));
-    $status      = valid_status((string) ($_POST['status'] ?? 'draft'));
-    $owner       = trim((string) ($_POST['owner']       ?? ''));
-    $department  = trim((string) ($_POST['department']  ?? ''));
+    $title        = trim((string) ($_POST['title']        ?? ''));
+    $slug         = trim((string) ($_POST['slug']         ?? ''));
+    $description  = trim((string) ($_POST['description']  ?? ''));
+    $status       = valid_status((string) ($_POST['status'] ?? 'draft'));
+    $owner        = trim((string) ($_POST['owner']        ?? ''));
+    $department   = trim((string) ($_POST['department']   ?? ''));
     $capturedDate = trim((string) ($_POST['captured_date'] ?? ''));
-    $version     = trim((string) ($_POST['version']     ?? ''));
+    $version      = trim((string) ($_POST['version']      ?? ''));
+    $allowEditors = isset($_POST['allow_editors']) ? 1 : 0;
 
     if ($title === '') {
         $error = 'Title is required.';
@@ -45,6 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             update_document($pdo, $asIsId, $title, $slug, $description, $status,
                             $owner, $department, $capturedDate, $version);
+            // Update sharing setting (only creator or admin can change this)
+            if (can_delete_document($document)) {
+                $pdo->prepare('UPDATE as_is_documents SET allow_editors = ? WHERE id = ?')
+                    ->execute([$allowEditors, $asIsId]);
+            }
             $document = fetch_document($pdo, $asIsId);
             if ($document === null) {
                 throw new RuntimeException('Document could not be reloaded.');
@@ -225,6 +236,21 @@ ob_start();
                 <option value="published" <?= $document['status'] === 'published' ? 'selected' : '' ?>>Published</option>
             </select>
         </div>
+
+        <?php if (can_delete_document($document)): ?>
+        <div>
+            <label style="font-weight:600;display:block;margin-bottom:0.3rem;">Who can edit this document?</label>
+            <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;cursor:pointer;">
+                <input type="checkbox" name="allow_editors"
+                       <?= ($document['allow_editors'] ?? 1) ? 'checked' : '' ?>>
+                Allow any editor in the system to make changes
+            </label>
+            <p class="field-help">
+                Uncheck to restrict editing to you and admins only.
+                Anyone can still <strong>view</strong> this document.
+            </p>
+        </div>
+        <?php endif; ?>
 
         <div class="actions">
             <button class="btn" type="submit">Save details</button>
@@ -738,9 +764,10 @@ $laneColours = ['#ffffff', '#e8eaed'];
             <a class="btn btn-secondary btn-sm" href="/step-edit.php?slug=<?= rawurlencode($document['slug']) ?>">Add first step</a>
         </div>
     <?php else: ?>
-        <table>
+        <table id="steps-table">
             <thead>
                 <tr>
+                    <th style="width:28px;"></th>
                     <th style="width:48px;">No.</th>
                     <th>Lane</th>
                     <th>Title</th>
@@ -750,9 +777,13 @@ $laneColours = ['#ffffff', '#e8eaed'];
                     <th></th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="steps-tbody">
                 <?php foreach ($steps as $step): ?>
-                    <tr>
+                    <tr data-step-id="<?= (int) $step['id'] ?>">
+                        <td style="cursor:grab;color:var(--muted);text-align:center;padding:0.4rem 0.3rem;"
+                            title="Drag to reorder">
+                            <i data-lucide="grip-vertical" style="width:14px;height:14px;pointer-events:none;"></i>
+                        </td>
                         <td><?= (int) $step['step_number'] ?></td>
                         <td style="white-space:nowrap;"><?= h($laneNames[(int) $step['lane_id']] ?? '—') ?></td>
                         <td><?= h($step['title']) ?></td>
@@ -1070,5 +1101,120 @@ const btn     = document.getElementById('ai-refine-btn');
     <p>Permanently removes this document, all lanes, steps, systems, and connections.</p>
     <a class="btn btn-danger" href="/delete.php?slug=<?= rawurlencode($document['slug']) ?>">Delete document</a>
 </div>
+
+
+<script>
+// ── Step drag-and-drop reordering ─────────────────────────────────────────────
+(function () {
+    const tbody  = document.getElementById('steps-tbody');
+    if (!tbody) return;
+
+    const slug   = <?= json_encode($document['slug']) ?>;
+    const csrf   = <?= json_encode(csrf_token()) ?>;
+    let dragging = null;
+    let indicator = null;
+
+    function getIndicator() {
+        if (!indicator) {
+            indicator = document.createElement('tr');
+            indicator.id = 'drag-indicator';
+            indicator.innerHTML = '<td colspan="8" style="padding:0;height:2px;background:var(--accent);"></td>';
+        }
+        return indicator;
+    }
+
+    tbody.addEventListener('dragstart', e => {
+        const row = e.target.closest('tr[data-step-id]');
+        if (!row) return;
+        dragging = row;
+        row.style.opacity = '0.4';
+        e.dataTransfer.effectAllowed = 'move';
+    });
+
+    tbody.addEventListener('dragend', e => {
+        if (dragging) { dragging.style.opacity = ''; dragging = null; }
+        getIndicator().remove();
+    });
+
+    tbody.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const row = e.target.closest('tr[data-step-id]');
+        if (!row || row === dragging) return;
+        const rect = row.getBoundingClientRect();
+        const mid  = rect.top + rect.height / 2;
+        if (e.clientY < mid) {
+            row.parentNode.insertBefore(getIndicator(), row);
+        } else {
+            row.parentNode.insertBefore(getIndicator(), row.nextSibling);
+        }
+    });
+
+    tbody.addEventListener('drop', e => {
+        e.preventDefault();
+        const ind = getIndicator();
+        if (dragging && ind.parentNode) {
+            ind.parentNode.insertBefore(dragging, ind);
+        }
+        ind.remove();
+        if (dragging) { dragging.style.opacity = ''; }
+
+        // Collect new order and save
+        const ids = [...tbody.querySelectorAll('tr[data-step-id]')]
+                      .map(r => r.dataset.stepId);
+
+        // Fixed toast so it's visible regardless of scroll position
+        const status = document.createElement('div');
+        status.style.cssText = [
+            'position:fixed;bottom:5rem;right:1.5rem;z-index:9999;',
+            'background:var(--surface);border:1px solid var(--border);',
+            'border-radius:var(--r-lg);padding:0.55rem 1rem;',
+            'font-size:0.82rem;font-weight:500;',
+            'box-shadow:0 4px 20px rgba(0,0,0,0.12);',
+            'display:flex;align-items:center;gap:0.5rem;'
+        ].join('');
+        status.innerHTML = '<span style="color:var(--muted);">Saving order…</span>';
+        document.body.appendChild(status);
+
+        const body = new URLSearchParams();
+        body.append('csrf_token', csrf);
+        body.append('slug', slug);
+        ids.forEach(id => body.append('step_ids[]', id));
+
+        fetch('/step-reorder.php', { method: 'POST', body })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    status.innerHTML = '<span style="color:var(--success);">✓ Order saved</span>';
+                    // Simple reload — connections are preserved automatically (they use step IDs)
+                    setTimeout(() => {
+                        window.location.href = window.location.pathname + '?slug=' + encodeURIComponent(slug) + '#steps';
+                    }, 800);
+                } else {
+                    status.innerHTML = '<span style="color:var(--danger);">✗ Save failed — ' + (data.error || 'unknown error') + '</span>';
+                    setTimeout(() => status.remove(), 3000);
+                }
+            })
+            .catch(err => {
+                status.innerHTML = '<span style="color:var(--danger);">✗ Request failed — ' + err.message + '</span>';
+                setTimeout(() => status.remove(), 3000);
+            });
+
+        dragging = null;
+    });
+
+    // Make rows draggable — only from the grip handle cell
+    tbody.querySelectorAll('tr[data-step-id]').forEach(row => {
+        const handle = row.querySelector('td:first-child');
+        if (handle) {
+            row.setAttribute('draggable', 'false');
+            handle.addEventListener('mousedown', () => row.setAttribute('draggable', 'true'));
+            handle.addEventListener('mouseup',   () => row.setAttribute('draggable', 'false'));
+        }
+    });
+
+    // Connections use step IDs so they survive renumbering automatically — no rebuild needed.
+})();
+</script>
 <?php
 render_layout('Edit ' . $document['title'], ob_get_clean() ?: '');
