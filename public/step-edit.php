@@ -28,11 +28,12 @@ $error      = null;
 $allStepNums = array_map(static fn($s) => (int)$s['step_number'], fetch_steps($pdo, $asIsId));
 $nextNumber  = count($allStepNums) > 0 ? max($allStepNums) + 1 : 1;
 $stepNumber  = $isEdit ? (int) $step['step_number'] : $nextNumber;
-$title      = $isEdit ? $step['title'] : '';
+$title       = $isEdit ? $step['title'] : '';
 $description = $isEdit ? (string) ($step['description'] ?? '') : '';
-$stepType   = $isEdit ? $step['step_type'] : 'task';
-$actionType = $isEdit ? ($step['action_type'] ?? 'general') : 'general';
-$laneId     = $isEdit ? (int) $step['lane_id'] : (int) ($lanes[0]['id'] ?? 0);
+$painPoints  = $isEdit ? (string) ($step['pain_points']  ?? '') : '';
+$stepType    = $isEdit ? $step['step_type'] : 'task';
+$actionType  = $isEdit ? ($step['action_type'] ?? 'general') : 'general';
+$laneId      = $isEdit ? (int) $step['lane_id'] : (int) ($lanes[0]['id'] ?? 0);
 $selectedSystemIds = $isEdit ? fetch_step_system_ids($pdo, $stepId) : [];
 
 // Pre-fill from AI-assist query params (new steps only, never overrides a real edit)
@@ -72,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stepNumber  = (int) ($_POST['step_number'] ?? 0);
     $title       = trim((string) ($_POST['title']       ?? ''));
     $description = trim((string) ($_POST['description'] ?? ''));
+    $painPoints  = trim((string) ($_POST['pain_points']  ?? ''));
     $stepType    = valid_step_type((string) ($_POST['step_type']   ?? 'task'));
     $actionType  = valid_action_type((string) ($_POST['action_type'] ?? 'general'));
     $selectedSystemIds = array_map('intval', (array) ($_POST['system_ids'] ?? []));
@@ -85,10 +87,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             if ($isEdit) {
-                update_step($pdo, $stepId, $laneId, $stepNumber, $title, $description, $stepType, $actionType);
+                update_step($pdo, $stepId, $laneId, $stepNumber, $title, $description, $stepType, $actionType, $painPoints);
                 sync_step_systems($pdo, $stepId, $selectedSystemIds);
             } else {
-                $newId = create_step($pdo, $asIsId, $laneId, $stepNumber, $title, $description, $stepType, $actionType);
+                $newId = create_step($pdo, $asIsId, $laneId, $stepNumber, $title, $description, $stepType, $actionType, $painPoints);
                 sync_step_systems($pdo, $newId, $selectedSystemIds);
             }
             redirect('/edit.php?slug=' . rawurlencode($document['slug']) . '#steps');
@@ -155,6 +157,13 @@ ob_start();
         <div>
             <label for="description">Description</label>
             <textarea id="description" name="description"><?= h($description) ?></textarea>
+        </div>
+
+        <div>
+            <label for="pain_points">Issues / frustrations</label>
+            <textarea id="pain_points" name="pain_points" rows="3"
+                      placeholder="Note any problems, delays, frustrations or inefficiencies at this step…"><?= h($painPoints) ?></textarea>
+            <p class="field-help">Optional. Captured pain points can be viewed together across all steps — useful for workshops and improvement conversations.</p>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">

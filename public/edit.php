@@ -117,6 +117,7 @@ ob_start();
     <div class="actions">
         <?php if ($hasSteps): ?>
             <a class="btn btn-secondary btn-sm" href="/view.php?slug=<?= rawurlencode($document['slug']) ?>">View diagram</a>
+            <a class="btn btn-secondary btn-sm" href="/pain-points.php?slug=<?= rawurlencode($document['slug']) ?>">Issues</a>
             <a class="btn btn-secondary btn-sm" href="/json-edit.php?slug=<?= rawurlencode($document['slug']) ?>">Edit JSON</a>
             <a class="btn btn-secondary btn-sm" href="/versions.php?slug=<?= rawurlencode($document['slug']) ?>">Version history</a>
         <?php endif; ?>

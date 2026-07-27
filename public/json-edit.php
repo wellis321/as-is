@@ -57,6 +57,7 @@ $currentJson = json_encode([
         'step_type'   => $s['step_type'],
         'action_type' => ($s['action_type'] ?? 'general') !== 'general' ? $s['action_type'] : null,
         'systems'     => $stepSystems[(int)$s['id']] ?: null,
+        'pain_points' => ($s['pain_points'] ?? '') ?: null,
     ], fn($v) => $v !== null && $v !== ''), $steps)),
     'connections' => array_values(array_map(fn($c) => array_filter([
         'from'  => (int) $c['from_number'],
@@ -158,7 +159,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         trim($step['title']       ?? 'Untitled'),
                         trim($step['description'] ?? ''),
                         valid_step_type($step['step_type']    ?? 'task'),
-                        valid_action_type($step['action_type'] ?? 'general')
+                        valid_action_type($step['action_type'] ?? 'general'),
+                        trim($step['pain_points'] ?? '')
                     );
                     $stepIdOf[(int) $step['step_number']] = $stepId;
 

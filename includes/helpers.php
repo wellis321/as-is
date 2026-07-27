@@ -232,6 +232,7 @@ function ensure_schema(PDO $pdo): void
     ensure_user_ai_key_columns($pdo);
     ensure_document_ownership_columns($pdo);
     ensure_versions_table($pdo);
+    ensure_pain_points_column($pdo);
 }
 
 function ensure_versions_table(PDO $pdo): void
@@ -282,11 +283,12 @@ function build_document_snapshot(PDO $pdo, int $asIsId): string
                 }
                 return '';
             })(),
-            'title'       => $s['title'],
-            'description' => $s['description'] ?? '',
-            'step_type'   => $s['step_type'],
-            'action_type' => ($s['action_type'] ?? 'general') !== 'general' ? $s['action_type'] : null,
-            'systems'     => $stepSystems[(int)$s['id']] ?: null,
+            'title'        => $s['title'],
+            'description'  => $s['description'] ?? '',
+            'step_type'    => $s['step_type'],
+            'action_type'  => ($s['action_type'] ?? 'general') !== 'general' ? $s['action_type'] : null,
+            'systems'      => $stepSystems[(int)$s['id']] ?: null,
+            'pain_points'  => ($s['pain_points'] ?? '') ?: null,
         ], fn($v) => $v !== null && $v !== ''), $steps)),
         'connections' => array_values(array_map(fn($c) => array_filter([
             'from'  => (int) $c['from_number'],
@@ -398,7 +400,8 @@ function restore_document_version(PDO $pdo, int $asIsId, string $snapshot, strin
             trim($step['title']        ?? 'Untitled'),
             trim($step['description']  ?? ''),
             valid_step_type($step['step_type']     ?? 'task'),
-            valid_action_type($step['action_type'] ?? 'general')
+            valid_action_type($step['action_type'] ?? 'general'),
+            trim($step['pain_points']  ?? '')
         );
         $stepIdOf[(int) $step['step_number']] = $stepId;
         foreach ($step['systems'] ?? [] as $sysName) {
@@ -418,6 +421,14 @@ function restore_document_version(PDO $pdo, int $asIsId, string $snapshot, strin
             $pdo->prepare('INSERT INTO step_connections (from_step_id, to_step_id, label) VALUES (?, ?, ?)')
                 ->execute([$fromId, $toId, $conn['label'] ?? null]);
         }
+    }
+}
+
+function ensure_pain_points_column(PDO $pdo): void
+{
+    $col = $pdo->query("SHOW COLUMNS FROM steps LIKE 'pain_points'")->fetch();
+    if (!$col) {
+        $pdo->exec("ALTER TABLE steps ADD COLUMN pain_points TEXT NULL DEFAULT NULL");
     }
 }
 
@@ -688,13 +699,15 @@ function create_step(
     string $title,
     string $description,
     string $stepType,
-    string $actionType = 'general'
+    string $actionType = 'general',
+    string $painPoints = ''
 ): int {
     $stmt = $pdo->prepare(
-        'INSERT INTO steps (as_is_id, lane_id, step_number, title, description, step_type, action_type)
-         VALUES (?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO steps (as_is_id, lane_id, step_number, title, description, step_type, action_type, pain_points)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     );
-    $stmt->execute([$asIsId, $laneId, $stepNumber, $title, $description, $stepType, $actionType]);
+    $stmt->execute([$asIsId, $laneId, $stepNumber, $title, $description, $stepType, $actionType,
+                    $painPoints !== '' ? $painPoints : null]);
 
     return (int) $pdo->lastInsertId();
 }
@@ -707,13 +720,16 @@ function update_step(
     string $title,
     string $description,
     string $stepType,
-    string $actionType = 'general'
+    string $actionType = 'general',
+    string $painPoints = ''
 ): void {
     $stmt = $pdo->prepare(
-        'UPDATE steps SET lane_id = ?, step_number = ?, title = ?, description = ?, step_type = ?, action_type = ?
+        'UPDATE steps SET lane_id = ?, step_number = ?, title = ?, description = ?,
+                          step_type = ?, action_type = ?, pain_points = ?
          WHERE id = ?'
     );
-    $stmt->execute([$laneId, $stepNumber, $title, $description, $stepType, $actionType, $stepId]);
+    $stmt->execute([$laneId, $stepNumber, $title, $description, $stepType, $actionType,
+                    $painPoints !== '' ? $painPoints : null, $stepId]);
 }
 
 function delete_step(PDO $pdo, int $stepId): void

@@ -54,6 +54,7 @@ $export = [
         'step_type'   => $s['step_type'],
         'action_type' => ($s['action_type'] ?? 'general') !== 'general' ? $s['action_type'] : null,
         'systems'     => $stepSystems[(int)$s['id']] ?: null,
+        'pain_points' => ($s['pain_points'] ?? '') ?: null,
     ], fn($v) => $v !== null && $v !== ''), $steps)),
     'connections' => array_values(array_map(fn($c) => array_filter([
         'from'  => (int) $c['from_number'],
