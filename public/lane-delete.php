@@ -31,10 +31,6 @@ if ($lane === null) {
 
 $otherLanes = array_values(array_filter($allLanes, fn($l) => (int) $l['id'] !== $laneId));
 
-$stepCount = (int) $pdo->prepare('SELECT COUNT(*) FROM steps WHERE lane_id = ?')
-    ->execute([$laneId]) ? $pdo->query("SELECT COUNT(*) FROM steps WHERE lane_id = $laneId")->fetchColumn() : 0;
-
-// Re-fetch cleanly
 $sc = $pdo->prepare('SELECT COUNT(*) FROM steps WHERE lane_id = ?');
 $sc->execute([$laneId]);
 $stepCount = (int) $sc->fetchColumn();

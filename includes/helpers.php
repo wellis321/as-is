@@ -322,11 +322,11 @@ function list_document_versions(PDO $pdo, int $asIsId): array
 {
     $stmt = $pdo->prepare(
         'SELECT dv.id, dv.label, dv.snapshot, dv.created_at,
-                u.name AS created_by_name
+                u.display_name AS created_by_name
          FROM document_versions dv
          LEFT JOIN users u ON u.id = dv.created_by
          WHERE dv.as_is_id = ?
-         ORDER BY dv.created_at DESC
+         ORDER BY dv.created_at DESC, dv.id DESC
          LIMIT 30'
     );
     $stmt->execute([$asIsId]);

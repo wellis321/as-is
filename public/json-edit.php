@@ -83,10 +83,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Invalid JSON — must include title, lanes, and steps.';
         } else {
             try {
-                $pdo->beginTransaction();
-
-                // 0. Auto-save current state before overwriting
+                // Save current state BEFORE the transaction — so if apply fails
+                // and we rollback, the protective snapshot is still committed.
                 save_document_version($pdo, $asIsId, 'Before JSON edit — ' . date('d M Y H:i'));
+
+                $pdo->beginTransaction();
 
                 // 1. Update document metadata
                 update_document(

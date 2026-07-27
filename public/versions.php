@@ -42,9 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && csrf_verify()) {
 
         if ($version) {
             try {
-                $pdo->beginTransaction();
-                // Auto-save current state before restoring so user can undo the restore
+                // Save current state BEFORE the restore transaction — committed independently
+                // so a failed restore doesn't roll back the protective snapshot.
                 save_document_version($pdo, $asIsId, 'Before restore — ' . date('d M Y H:i'));
+
+                $pdo->beginTransaction();
                 restore_document_version($pdo, $asIsId, $version['snapshot'], $document['slug'], $document['status']);
                 $pdo->commit();
                 $_SESSION['version_notice'] = ['success', 'Restored to version from ' . date('d M Y H:i', strtotime($version['created_at'])) . '.'];
