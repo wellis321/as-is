@@ -210,6 +210,96 @@ ob_start();
         The import page shows the expected structure if you want to create a JSON file from scratch rather than exporting one.
         Go to <a href="/import.php">Import JSON</a> to get started.
     </p>
+
+    <h3 style="margin:1.5rem 0 0.5rem;font-size:1rem;">Editing a live diagram via JSON</h3>
+    <p>
+        As well as importing JSON to create a <em>new</em> document, you can edit the JSON of an existing diagram
+        and apply those changes back in place — useful for bulk changes that would take a long time through the Edit page.
+    </p>
+    <p>
+        On the <strong>Edit page</strong> (or the JSON export view), click <strong>Edit JSON</strong>.
+        The editor opens pre-populated with the current diagram's JSON. You can:
+    </p>
+    <ul style="margin:0.4rem 0 0.8rem 1.25rem;">
+        <li>Rename lanes or steps</li>
+        <li>Add, remove, or reorder steps</li>
+        <li>Change step types, action types, or descriptions</li>
+        <li>Add or remove connections</li>
+        <li>Update any document metadata</li>
+    </ul>
+    <p>
+        Click <strong>Apply changes</strong> to replace the diagram with the edited version.
+        The system automatically saves a version snapshot before applying, so if anything goes wrong you can restore the previous state from <strong>Version history</strong>.
+    </p>
+</div>
+
+<!-- ── Version history ────────────────────────────────────────────── -->
+<div class="card">
+    <h2>Version history</h2>
+    <p>
+        Every process map has a version history. You can save a named snapshot at any point and restore any previous
+        version if a diagram gets changed in a way you didn't intend.
+    </p>
+
+    <div style="display:grid;gap:0;">
+        <?php
+        $versionSteps = [
+            ['Save a version',
+             'Open the <strong>Version history</strong> page from the Edit page header. Give the snapshot an optional label (e.g. "Before Phase 2 steps") and click <strong>Save version</strong>. A good habit is to save before any large batch of changes.'],
+            ['Automatic snapshots',
+             'The system saves a version automatically before certain destructive operations — most importantly before <strong>Apply changes</strong> in the JSON editor. These auto-saved versions are labelled with the date and action so you can tell them apart.'],
+            ['Restore a previous version',
+             'On the Version history page, each saved version shows its date, who saved it, and a summary of lane, step and connection counts. Click <strong>Restore</strong> on the version you want. Before restoring, the system saves the current state so the restore itself can also be undone.'],
+            ['Tidy up old versions',
+             'You can delete individual versions you no longer need using the Delete link next to each entry. Up to 30 versions are kept per document — the oldest are pruned automatically when the limit is reached.'],
+        ];
+        foreach ($versionSteps as $i => [$title, $body]):
+        ?>
+        <div style="display:grid;grid-template-columns:48px 1fr;gap:0;border-bottom:<?= $i < count($versionSteps)-1 ? '1px solid var(--border)' : 'none' ?>;padding:1rem 0;">
+            <div style="font-size:1.4rem;font-weight:700;color:var(--accent);padding-top:0.1rem;"><?= $i + 1 ?></div>
+            <div>
+                <strong><?= $title ?></strong>
+                <p style="margin-top:0.3rem;margin-bottom:0;"><?= $body ?></p>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
+<!-- ── Document ownership ─────────────────────────────────────────── -->
+<div class="card">
+    <h2>Document ownership and sharing</h2>
+    <p>
+        The person who creates a process map is its owner. Ownership controls who can make changes — keeping
+        your work safe while still allowing collaboration when you want it.
+    </p>
+
+    <div style="display:grid;gap:0.75rem;margin-top:0.75rem;">
+        <div style="padding:0.8rem;border:1px solid var(--border);border-radius:var(--r);">
+            <strong style="font-size:0.9rem;">Restricting editing</strong>
+            <p style="margin:0.3rem 0 0;font-size:0.875rem;color:var(--muted);">
+                By default, any editor in the system can modify your document. To restrict it, open the Edit page,
+                scroll to the document details section, and uncheck <em>Allow other editors to make changes</em>.
+                Once restricted, only you and admins can edit or delete the document.
+                Anyone can still <strong>view</strong> a restricted document.
+            </p>
+        </div>
+        <div style="padding:0.8rem;border:1px solid var(--border);border-radius:var(--r);">
+            <strong style="font-size:0.9rem;">The lock icon on the documents list</strong>
+            <p style="margin:0.3rem 0 0;font-size:0.875rem;color:var(--muted);">
+                A small lock icon next to a document title means it is restricted — you can view it but
+                only the owner and admins can edit it. The Edit button is hidden for documents you don't have
+                permission to change.
+            </p>
+        </div>
+        <div style="padding:0.8rem;border:1px solid var(--border);border-radius:var(--r);">
+            <strong style="font-size:0.9rem;">Legacy documents</strong>
+            <p style="margin:0.3rem 0 0;font-size:0.875rem;color:var(--muted);">
+                Documents created before ownership was introduced have no recorded owner and behave as
+                shared — any editor can continue to modify them. Admins can always edit and delete any document.
+            </p>
+        </div>
+    </div>
 </div>
 
 <!-- ── Step types ────────────────────────────────────────────────── -->
@@ -588,6 +678,11 @@ ob_start();
         <li>The <a href="/view.php?slug=sample-repair-quick">Housing Repair — Quick View</a> sample is the shortest example and shows all the key features: focus mode, cross-lane handoffs, multi-row layout, and both <strong>Subprocess</strong> and <strong>Parallel gateway</strong> step types.</li>
         <li>Use the <strong>Lane templates</strong> on the New AS-IS page to skip the lane setup step entirely for common process structures.</li>
         <li>The <strong>Clone</strong> button on any step creates a duplicate you can adjust — faster than re-entering everything for similar steps.</li>
+        <li>To rename a lane, click the pencil icon next to its name on the Edit page — the name becomes editable in place. Press Enter to save or Escape to cancel. No page reload needed.</li>
+        <li>When deleting a swimlane that has steps in it, you will be offered the option to <strong>move those steps into another lane</strong> rather than losing them. Choose the destination lane from the dropdown before confirming.</li>
+        <li>Save a version before making a large batch of changes — open <strong>Version history</strong> from the Edit page header, add a label so you know what it represents, and click Save version.</li>
+        <li>The <strong>Edit JSON</strong> button on the Edit page lets you make bulk changes to steps, connections, and lane names in a single edit rather than clicking through each one individually.</li>
+        <li>If you restore a version and it wasn't the right one, open Version history again — the state before the restore was auto-saved and will be at the top of the list.</li>
     </ul>
 </div>
 

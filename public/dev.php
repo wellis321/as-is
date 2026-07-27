@@ -22,6 +22,18 @@ ob_start();
     <div style="display:grid;gap:0;">
         <?php
         $done = [
+            ['Version history',
+             'Save named snapshots of any process map at any point. Each version records the full diagram state — lanes, steps, connections and metadata. Restore any previous version with one click; the current state is auto-saved first so the restore itself can be undone. Up to 30 versions are kept per document. Versions are also created automatically before any major change such as applying a JSON edit.'],
+            ['JSON editor for existing documents',
+             'Edit the JSON of a live process map directly and apply the changes back to the same document. The editor pre-populates with the current diagram JSON, validates in real time as you type, and includes Format and Reset buttons. Applying the changes auto-saves a version first so nothing is lost. Accessible via Edit JSON on the Edit page.'],
+            ['Document ownership and sharing control',
+             'Every new document records its creator. Owners can choose whether other editors in the system can modify their document, or restrict it to themselves and admins only. A lock icon on the documents list signals a restricted document. Admins can always edit and delete any document regardless of setting.'],
+            ['Inline lane rename',
+             'Lane names can be edited directly in the Edit page table — click the pencil icon next to any lane name, type the new name, and press Enter or click Save. No page reload required.'],
+            ['Lane deletion with step preservation',
+             'When deleting a swimlane that contains steps, users now choose whether to move those steps into another existing lane (preserving all the work), or delete them permanently. The button label updates to reflect the choice before confirming.'],
+            ['Feedback inbox with archive and delete',
+             'The admin feedback view now shows submissions as individual cards with truncated messages and a Read more toggle. Each entry can be archived (moves it out of the inbox without permanent deletion) or deleted. An Inbox / Archived tab switcher keeps the view clean.'],
             ['Diagram viewer — multi-row layout',
              'Steps wrap into multiple rows within each swimlane so even a 20+ step process is readable without horizontal scrolling. Lane heights adjust dynamically to fit their content.'],
             ['Decision-branch-aware layout',

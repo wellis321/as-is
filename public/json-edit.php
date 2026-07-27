@@ -85,6 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $pdo->beginTransaction();
 
+                // 0. Auto-save current state before overwriting
+                save_document_version($pdo, $asIsId, 'Before JSON edit — ' . date('d M Y H:i'));
+
                 // 1. Update document metadata
                 update_document(
                     $pdo,
@@ -221,6 +224,7 @@ ob_start();
         <p style="margin:0;color:var(--muted);font-size:0.875rem;">Edit JSON — changes replace the current diagram</p>
     </div>
     <div class="actions">
+        <a class="btn btn-secondary btn-sm" href="/versions.php?slug=<?= rawurlencode($document['slug']) ?>">Version history</a>
         <a class="btn btn-secondary btn-sm" href="/view.php?slug=<?= rawurlencode($document['slug']) ?>">View diagram</a>
         <a class="btn btn-secondary btn-sm" href="/edit.php?slug=<?= rawurlencode($document['slug']) ?>">Edit</a>
     </div>

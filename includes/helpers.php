@@ -231,6 +231,194 @@ function ensure_schema(PDO $pdo): void
     ensure_notif_check_column($pdo);
     ensure_user_ai_key_columns($pdo);
     ensure_document_ownership_columns($pdo);
+    ensure_versions_table($pdo);
+}
+
+function ensure_versions_table(PDO $pdo): void
+{
+    $pdo->exec("CREATE TABLE IF NOT EXISTS document_versions (
+        id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        as_is_id   INT UNSIGNED NOT NULL,
+        label      VARCHAR(255) NOT NULL DEFAULT '',
+        snapshot   LONGTEXT     NOT NULL,
+        created_by INT UNSIGNED NULL DEFAULT NULL,
+        created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_doc_versions (as_is_id, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
+// ── Version helpers ───────────────────────────────────────────────────────────
+
+function build_document_snapshot(PDO $pdo, int $asIsId): string
+{
+    $document    = fetch_document($pdo, $asIsId);
+    $lanes       = fetch_lanes($pdo, $asIsId);
+    $steps       = fetch_steps($pdo, $asIsId);
+    $connections = fetch_connections($pdo, $asIsId);
+
+    $stepSystems = [];
+    foreach ($steps as $s) {
+        $sysList = trim((string) ($s['systems'] ?? ''));
+        $stepSystems[(int) $s['id']] = $sysList !== ''
+            ? array_map('trim', explode(',', $sysList)) : [];
+    }
+
+    return json_encode([
+        'as_is_version' => '1.0',
+        'title'         => $document['title']        ?? '',
+        'description'   => $document['description']  ?? '',
+        'owner'         => $document['owner']         ?? '',
+        'department'    => $document['department']    ?? '',
+        'captured_date' => $document['captured_date'] ?? '',
+        'version'       => $document['version']       ?? '',
+        'lanes' => array_values(array_map(fn($l) => [
+            'name' => $l['name'], 'color' => $l['color'],
+        ], $lanes)),
+        'steps' => array_values(array_map(fn($s) => array_filter([
+            'step_number' => (int) $s['step_number'],
+            'lane'        => $s['lane_name'] ?? (function() use ($s, $lanes) {
+                foreach ($lanes as $l) {
+                    if ((int)$l['id'] === (int)$s['lane_id']) return $l['name'];
+                }
+                return '';
+            })(),
+            'title'       => $s['title'],
+            'description' => $s['description'] ?? '',
+            'step_type'   => $s['step_type'],
+            'action_type' => ($s['action_type'] ?? 'general') !== 'general' ? $s['action_type'] : null,
+            'systems'     => $stepSystems[(int)$s['id']] ?: null,
+        ], fn($v) => $v !== null && $v !== ''), $steps)),
+        'connections' => array_values(array_map(fn($c) => array_filter([
+            'from'  => (int) $c['from_number'],
+            'to'    => (int) $c['to_number'],
+            'label' => $c['label'] ?: null,
+        ], fn($v) => $v !== null), $connections)),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
+function save_document_version(PDO $pdo, int $asIsId, string $label = ''): int
+{
+    $snapshot  = build_document_snapshot($pdo, $asIsId);
+    $userId    = (int) ($_SESSION['user_id'] ?? 0) ?: null;
+    $stmt      = $pdo->prepare(
+        'INSERT INTO document_versions (as_is_id, label, snapshot, created_by) VALUES (?, ?, ?, ?)'
+    );
+    $stmt->execute([$asIsId, $label, $snapshot, $userId]);
+    $versionId = (int) $pdo->lastInsertId();
+
+    // Keep at most 30 versions per document — prune oldest beyond that
+    $pdo->prepare(
+        'DELETE FROM document_versions WHERE as_is_id = ? AND id NOT IN (
+             SELECT id FROM (
+                 SELECT id FROM document_versions WHERE as_is_id = ? ORDER BY created_at DESC LIMIT 30
+             ) AS keep
+         )'
+    )->execute([$asIsId, $asIsId]);
+
+    return $versionId;
+}
+
+function list_document_versions(PDO $pdo, int $asIsId): array
+{
+    $stmt = $pdo->prepare(
+        'SELECT dv.id, dv.label, dv.snapshot, dv.created_at,
+                u.name AS created_by_name
+         FROM document_versions dv
+         LEFT JOIN users u ON u.id = dv.created_by
+         WHERE dv.as_is_id = ?
+         ORDER BY dv.created_at DESC
+         LIMIT 30'
+    );
+    $stmt->execute([$asIsId]);
+    return $stmt->fetchAll();
+}
+
+function restore_document_version(PDO $pdo, int $asIsId, string $snapshot, string $currentSlug, string $currentStatus): void
+{
+    $data = json_decode($snapshot, true);
+    if (!is_array($data)) throw new RuntimeException('Invalid snapshot JSON.');
+
+    // Wipe existing content
+    $pdo->prepare(
+        'DELETE sc FROM step_connections sc
+         JOIN steps s ON (s.id = sc.from_step_id OR s.id = sc.to_step_id)
+         WHERE s.as_is_id = ?'
+    )->execute([$asIsId]);
+    $pdo->prepare(
+        'DELETE ss FROM step_systems ss
+         JOIN steps s ON s.id = ss.step_id WHERE s.as_is_id = ?'
+    )->execute([$asIsId]);
+    $pdo->prepare('DELETE FROM steps WHERE as_is_id = ?')->execute([$asIsId]);
+    $pdo->prepare('DELETE FROM lanes WHERE as_is_id = ?')->execute([$asIsId]);
+
+    // Update document metadata
+    update_document($pdo, $asIsId,
+        trim($data['title']        ?? ''),
+        $currentSlug,
+        trim($data['description']  ?? ''),
+        valid_status($currentStatus),
+        trim($data['owner']        ?? ''),
+        trim($data['department']   ?? ''),
+        trim($data['captured_date'] ?? ''),
+        trim($data['version']      ?? '')
+    );
+
+    // Recreate lanes
+    $laneIdOf = [];
+    foreach ($data['lanes'] ?? [] as $lane) {
+        $laneIdOf[trim($lane['name'])] = create_lane(
+            $pdo, $asIsId, trim($lane['name']), trim($lane['color'] ?? '#e8f0fe')
+        );
+    }
+
+    // Systems (upsert)
+    $sysIdOf = [];
+    foreach ($data['steps'] ?? [] as $step) {
+        foreach ($step['systems'] ?? [] as $sysName) {
+            $sysName = trim($sysName);
+            if ($sysName === '' || isset($sysIdOf[$sysName])) continue;
+            $row = $pdo->prepare('SELECT id FROM systems WHERE name = ?');
+            $row->execute([$sysName]);
+            $existing = $row->fetchColumn();
+            $sysIdOf[$sysName] = $existing ?: (function() use ($pdo, $sysName) {
+                $pdo->prepare('INSERT INTO systems (name) VALUES (?)')->execute([$sysName]);
+                return (int) $pdo->lastInsertId();
+            })();
+        }
+    }
+
+    // Recreate steps
+    $stepIdOf = [];
+    foreach ($data['steps'] ?? [] as $step) {
+        $laneName = trim($step['lane'] ?? '');
+        $laneId   = $laneIdOf[$laneName] ?? (array_values($laneIdOf)[0] ?? 0);
+        if (!$laneId) continue;
+        $stepId = create_step($pdo, $asIsId, $laneId,
+            (int) ($step['step_number'] ?? 0),
+            trim($step['title']        ?? 'Untitled'),
+            trim($step['description']  ?? ''),
+            valid_step_type($step['step_type']     ?? 'task'),
+            valid_action_type($step['action_type'] ?? 'general')
+        );
+        $stepIdOf[(int) $step['step_number']] = $stepId;
+        foreach ($step['systems'] ?? [] as $sysName) {
+            $sysName = trim($sysName);
+            if (isset($sysIdOf[$sysName])) {
+                $pdo->prepare('INSERT IGNORE INTO step_systems (step_id, system_id) VALUES (?, ?)')
+                    ->execute([$stepId, $sysIdOf[$sysName]]);
+            }
+        }
+    }
+
+    // Recreate connections
+    foreach ($data['connections'] ?? [] as $conn) {
+        $fromId = $stepIdOf[(int)($conn['from'] ?? 0)] ?? null;
+        $toId   = $stepIdOf[(int)($conn['to']   ?? 0)] ?? null;
+        if ($fromId && $toId) {
+            $pdo->prepare('INSERT INTO step_connections (from_step_id, to_step_id, label) VALUES (?, ?, ?)')
+                ->execute([$fromId, $toId, $conn['label'] ?? null]);
+        }
+    }
 }
 
 function ensure_document_ownership_columns(PDO $pdo): void
