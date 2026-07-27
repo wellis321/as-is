@@ -308,7 +308,29 @@ $laneColours = ['#ffffff', '#e8eaed'];
                                 </form>
                             <?php endif; ?>
                         </td>
-                        <td><?= h($lane['name']) ?></td>
+                        <td>
+                            <span class="lane-name-display" data-lane-id="<?= (int) $lane['id'] ?>"
+                                  style="display:inline-flex;align-items:center;gap:0.4rem;">
+                                <span class="lane-name-text"><?= h($lane['name']) ?></span>
+                                <button type="button"
+                                        onclick="editLaneName(this, <?= (int) $lane['id'] ?>, <?= h(json_encode($lane['name'])) ?>)"
+                                        class="btn btn-link btn-sm"
+                                        title="Rename lane"
+                                        style="padding:0;opacity:0.5;">
+                                    <i data-lucide="pencil" style="width:0.8rem;height:0.8rem;"></i>
+                                </button>
+                            </span>
+                            <span class="lane-name-edit" data-lane-id="<?= (int) $lane['id'] ?>"
+                                  style="display:none;align-items:center;gap:0.4rem;">
+                                <input type="text" class="lane-name-input"
+                                       style="padding:0.25rem 0.4rem;font-size:0.875rem;border:1px solid var(--border);
+                                              border-radius:var(--r);width:14rem;">
+                                <button type="button" class="btn btn-sm"
+                                        onclick="saveLaneName(<?= (int) $lane['id'] ?>)">Save</button>
+                                <button type="button" class="btn btn-secondary btn-sm"
+                                        onclick="cancelLaneName(<?= (int) $lane['id'] ?>)">Cancel</button>
+                            </span>
+                        </td>
                         <td>
                             <span style="display:inline-block;width:32px;height:18px;border-radius:3px;
                                          background:<?= $laneColours[$i % 2] ?>;border:1px solid var(--border);
@@ -1215,6 +1237,66 @@ const btn     = document.getElementById('ai-refine-btn');
 
     // Connections use step IDs so they survive renumbering automatically — no rebuild needed.
 })();
+</script>
+
+<script>
+// ── Inline lane rename ────────────────────────────────────────────────────────
+const _laneSlug = <?= json_encode($document['slug']) ?>;
+const _laneCsrf = <?= json_encode($_SESSION['csrf_token'] ?? '') ?>;
+
+function editLaneName(btn, laneId, currentName) {
+    const display = document.querySelector('.lane-name-display[data-lane-id="' + laneId + '"]');
+    const editor  = document.querySelector('.lane-name-edit[data-lane-id="' + laneId + '"]');
+    const input   = editor.querySelector('.lane-name-input');
+    display.style.display = 'none';
+    editor.style.display  = 'inline-flex';
+    input.value = currentName;
+    input.focus();
+    input.select();
+    input.addEventListener('keydown', function handler(e) {
+        if (e.key === 'Enter')  { e.preventDefault(); saveLaneName(laneId); input.removeEventListener('keydown', handler); }
+        if (e.key === 'Escape') { cancelLaneName(laneId); input.removeEventListener('keydown', handler); }
+    });
+}
+
+function cancelLaneName(laneId) {
+    const display = document.querySelector('.lane-name-display[data-lane-id="' + laneId + '"]');
+    const editor  = document.querySelector('.lane-name-edit[data-lane-id="' + laneId + '"]');
+    display.style.display = '';
+    editor.style.display  = 'none';
+}
+
+function saveLaneName(laneId) {
+    const display  = document.querySelector('.lane-name-display[data-lane-id="' + laneId + '"]');
+    const editor   = document.querySelector('.lane-name-edit[data-lane-id="' + laneId + '"]');
+    const input    = editor.querySelector('.lane-name-input');
+    const nameText = display.querySelector('.lane-name-text');
+    const newName  = input.value.trim();
+
+    if (!newName) { input.focus(); return; }
+
+    const body = new URLSearchParams();
+    body.append('csrf_token', _laneCsrf);
+    body.append('slug',    _laneSlug);
+    body.append('lane_id', laneId);
+    body.append('name',    newName);
+
+    fetch('/lane-rename.php', { method: 'POST', body })
+        .then(r => r.json())
+        .then(d => {
+            if (d.ok) {
+                nameText.textContent = d.name;
+                // Update the pencil button's onclick with new name
+                const btn = display.querySelector('button');
+                if (btn) btn.setAttribute('onclick',
+                    'editLaneName(this,' + laneId + ',' + JSON.stringify(d.name) + ')');
+                cancelLaneName(laneId);
+            } else {
+                alert('Could not rename lane: ' + (d.error || 'unknown error'));
+            }
+        })
+        .catch(() => alert('Network error — please try again.'));
+}
 </script>
 <?php
 render_layout('Edit ' . $document['title'], ob_get_clean() ?: '');

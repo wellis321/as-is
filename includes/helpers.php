@@ -556,6 +556,12 @@ function delete_lane(PDO $pdo, int $laneId): void
     $stmt->execute([$laneId]);
 }
 
+function move_steps_to_lane(PDO $pdo, int $fromLaneId, int $toLaneId): void
+{
+    $pdo->prepare('UPDATE steps SET lane_id = ? WHERE lane_id = ?')
+        ->execute([$toLaneId, $fromLaneId]);
+}
+
 function reorder_lane(PDO $pdo, int $laneId, int $asIsId, string $direction): void
 {
     $lanes = fetch_lanes($pdo, $asIsId);
