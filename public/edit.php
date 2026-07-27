@@ -117,6 +117,7 @@ ob_start();
     <div class="actions">
         <?php if ($hasSteps): ?>
             <a class="btn btn-secondary btn-sm" href="/view.php?slug=<?= rawurlencode($document['slug']) ?>">View diagram</a>
+            <a class="btn btn-secondary btn-sm" href="/json-edit.php?slug=<?= rawurlencode($document['slug']) ?>">Edit JSON</a>
         <?php endif; ?>
         <a class="btn btn-secondary btn-sm" href="/documents.php">All documents</a>
     </div>

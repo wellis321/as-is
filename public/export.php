@@ -77,6 +77,9 @@ if (!empty($_GET['view'])) {
         </div>
         <div class="actions">
             <a class="btn btn-secondary btn-sm" href="/export.php?slug=<?= rawurlencode($document['slug']) ?>">Download</a>
+            <?php if (can_edit_document($document)): ?>
+            <a class="btn btn-secondary btn-sm" href="/json-edit.php?slug=<?= rawurlencode($document['slug']) ?>">Edit JSON</a>
+            <?php endif; ?>
             <a class="btn btn-secondary btn-sm" href="/view.php?slug=<?= rawurlencode($document['slug']) ?>">View diagram</a>
         </div>
     </header>
